@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 #
-# This application listen for events and process them according
-# to a set of rules. Commands and/or state changes may ensue.
+# This is a library to connect to the AP provided by IoT devices and
+# provision them.
 #
 # Copyright (c) 2018 François Wautier
 #

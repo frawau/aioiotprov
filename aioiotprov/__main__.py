@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 #
-# This application listen for events and process them according
-# to a set of rules. Commands and/or state changes may ensue.
+# This application looks for known AP (defined by plugins)
+# and attempt to provision the respective IoT devices
 #
 # Copyright (c) 2018 François Wautier
 #
@@ -46,7 +46,7 @@ try:
 except Exception as e:
     parser.error("Error: " + str(e))
     sys.exit(1)
-    
+
 if opts.debug:
     logging.basicConfig(level=logging.DEBUG)
 else:

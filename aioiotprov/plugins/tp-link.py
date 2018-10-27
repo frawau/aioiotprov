@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 #
-# This plugin handls the provisioning of TP-Link devices
+# This plugin handles the provisioning of TP-Link devices
 #
 # Copyright (c) 2018 François Wautier
 #

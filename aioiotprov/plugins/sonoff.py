@@ -27,23 +27,24 @@
 import asyncio
 import aiohttp as aioh
 import logging
-import string
-import random
-def id_generator(size=5, chars=string.ascii_lowercase + string.digits):
-   return ''.join(random.choice(chars) for _ in range(size))
+
+DELAY=17
 
 class Sonoff(object):
 
-    name = "Sonoff"
+    name = "sonoff"
 
-    def __init__(self):
+    def __init__(self,mac):
         """
         The go_on attribute must exist. It is set to False when provisioning is done
+
+        :param mac: MAC address of the device being provisioned
+        :type mac: str
         """
         self.go_on=True
-        self.myid = id_generator()
+        self.myid = "".join(mac.split(":")[-3:]).upper()
         self.mypassword = ""
-        pass
+        self.mac = mac
 
     @classmethod
     def can_handle(self,cells):
@@ -64,10 +65,10 @@ class Sonoff(object):
         return resu
 
     async def secure(self,user,passwd):
-        """ Nothing here """
+        """ Setting the password... and remembering it for subsequent access """
         if passwd:
             self.mypassword = passwd
-            params={"w":"5,1","p1":passwd,"a1":"Sonoff-%s"%id_generator(),"b2":0}
+            params={"w":"5,1","p1":passwd,"a1":"Sonoff-%s"%self.myid,"b2":0}
             auth = aioh.BasicAuth(login="admin", password=self.mypassword)
             async with aioh.ClientSession(auth=auth) as session:
                 async with session.request("get","http://192.168.4.1/sv",params=params) as resp:
@@ -79,8 +80,52 @@ class Sonoff(object):
                         logging.debug("Sonoff: Response was {}".format( await resp.text()))
                     except:
                         pass
-                    logging.debug("Sonoff: Set password")
-            await asyncio.sleep(16)
+                    logging.debug("Sonoff: Password %sset"%((self.mypassword=="" and "not") or "" ))
+            await asyncio.sleep(DELAY)
+        else:
+            await asyncio.sleep(0)
+
+    async def set_options(self,options={}):
+        """ Could set MQTT here
+
+        :param options: A list of options to be set. Here MQTT setting is possible
+        :type options: dict
+
+        """
+        logging.debug("options --> {}".format(options))
+        if "mqtt" in options:
+            if options["mqtt"] in [True, "on", 1]:
+                params={"w":"5,1","b1":"on","a1":"Sonoff-%s"%self.myid}
+            else:
+                params={"w":"5,1","a1":"Sonoff-%s"%self.myid}
+            if self.mypassword:
+                auth = aioh.BasicAuth(login="admin", password=self.mypassword)
+            else:
+                auth = None
+
+            #Set MQTT
+            async with aioh.ClientSession(auth=auth) as session:
+                async with session.request("get","http://192.168.4.1/sv",params=params) as resp:
+                    logging.debug(resp.url)
+                    logging.debug("Sonoff: Response status was {}".format(resp.status))
+            await asyncio.sleep(DELAY)
+
+            if options["mqtt"] in [True, "on", 1]:
+                #All parameters shouuld be there I think
+                params={"w":"2,1"}
+                for k,o in [("host","mh"),("port","ml"),("client","mc"),("user","mu"),
+                            ("password","mp"),("topic","mt"),("full topic","mf")]:
+                    if k in options:
+                        params[o]=options[k] #Set MQTT
+                async with aioh.ClientSession(auth=auth) as session:
+                    async with session.request("get","http://192.168.4.1/sv",params=params) as resp:
+                        logging.debug(resp.url)
+                        logging.debug("Sonoff: Response status was {}".format(resp.status))
+                        if resp.status != 200:
+                            logging.debug("Sonoff: MQTT not configured")
+                        else:
+                            logging.debug("Sonoff: MQTT configured")
+                await asyncio.sleep(DELAY)
         else:
             await asyncio.sleep(0)
 

@@ -52,14 +52,18 @@ def decrypt(string):
 
 class TPLink(object):
 
-    name = "TP-Link"
+    name = "tp-link"
 
-    def __init__(self):
+    def __init__(self,mac):
         """
         The go_on attribute must exist. It is set to False when provisioning is done
+
+        :param mac: MAC address of the device being provisioned
+        :type mac: str
+
         """
         self.go_on=True
-        pass
+        self.mac = mac
 
     @classmethod
     def can_handle(self,cells):
@@ -82,6 +86,11 @@ class TPLink(object):
     async def secure(self,user,passwd):
         """ Nothing here """
         await asyncio.sleep(0)
+
+    async def set_options(self,options={}):
+        """ Nothing here """
+        await asyncio.sleep(0)
+
 
     async def provision(self, ip, ssid, psk, ktype):
         """Coroutine to perform provisioning

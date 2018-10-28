@@ -33,14 +33,17 @@ import logging, socket
 
 class Broadlink(object):
 
-    name = "Broadlink"
+    name = "broadlink"
 
-    def __init__(self):
+    def __init__(self,mac):
         """
         The go_on attribute must exist. It is set to False when provisioning is done
+
+        :param mac: MAC address of the device being provisioned
+        :type mac: str
         """
         self.go_on=True
-        pass
+        self.mac = mac
 
     @classmethod
     def can_handle(self,cells):
@@ -61,6 +64,10 @@ class Broadlink(object):
         return resu
 
     async def secure(self,user,passwd):
+        """ Nothing here """
+        await asyncio.sleep(0)
+
+    async def set_options(self,options={}):
         """ Nothing here """
         await asyncio.sleep(0)
 
@@ -141,7 +148,7 @@ class Broadlink(object):
                 self.broadcast()
 
             def datagram_received(self, data, addr):
-                logging.debug('data received:', data, addr)
+                logging.debug('data received: {}, {}'.format(data, addr))
 
             def broadcast(self):
                 self.transport.sendto(payload, (".".join(self.ip.split(".")[:-1]+['255']), 80))

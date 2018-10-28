@@ -28,6 +28,29 @@ import argparse,os,sys,asyncio
 import aioiotprov as aiop
 import logging
 
+class OptionString(argparse.Action):
+     def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        self._nargs = nargs
+        super(OptionString, self).__init__(option_strings, dest, nargs=nargs, **kwargs)
+
+     def __call__(self, parser, namespace, values, option_string=None):
+        options = {}
+
+        try:
+            for aval in values:
+                key = aval.split(":")[0].strip()
+                allvals ={}
+                lovals=(":".join(aval.split(":")[1:])).split(",")
+                for aval in lovals:
+                    vkey = (aval.split("="))[0].strip()
+                    allvals[vkey] = (aval.split("="))[1].strip()
+                options[key]=allvals
+        except:
+            raise argparse.ArgumentTypeError("Could not parse options \"{}\"".format(aval))
+        setattr(namespace, self.dest, options)
+
+
+
 #Needed arguments
 parser = argparse.ArgumentParser(description="Provision IoT devices")
 parser.add_argument("ssid",
@@ -38,6 +61,8 @@ parser.add_argument("-u","--user", default='',
                     help="The user that will control access to the device")
 parser.add_argument("-p","--password", default='',
                     help="The password that will control access to the device.")
+parser.add_argument("-o","--options", dest="options", action=OptionString, nargs="*", metavar="<plugin>:opt1=val1, opt2=val2,..",
+                    help="Option to be passed to plugins.")
 parser.add_argument("-d","--debug", default=False, action="store_true",
                     help="Print debug information.")
 
@@ -76,6 +101,6 @@ if not isset:
 
 else:
     print("Using interface {} with restore {}".format(provisioner.iface,provisioner.is_shared))
-    resu=loop.run_until_complete(provisioner.provision())
+    resu=loop.run_until_complete(provisioner.provision(options=opts.options))
     print("Got: {}".format(resu))
 loop.close()

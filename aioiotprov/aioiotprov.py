@@ -403,7 +403,7 @@ class IoTProvision(object):
         xx = await run_cmd(["wpa_cli", "-i", self.iface,"reconfigure"])
 
 
-    async def provision(self,plugins=None):
+    async def provision(self,plugins=None,options={}):
         """Connect to the given wifi network.
 
             :param plugins: List of plugins to load. None means all.
@@ -427,10 +427,10 @@ class IoTProvision(object):
                 for cdef in self.cells[self.iface]:
                     if cdef["ssid"] == acell:
                         cencrypt = cdef["encryption"]
+                        mac = cdef["bssid"]
                         break
-
                 currcnt=1
-                myplug = aplug()
+                myplug = aplug(mac)
                 while myplug.go_on:
                     if currcnt == 1 or (currcnt%2 and self.is_shared):
                         #Only connects if really needed
@@ -457,6 +457,8 @@ class IoTProvision(object):
                             break
 
                     xx = await myplug.secure(self.user,self.passw)
+                    if myplug.name in options:
+                        xx = await myplug.set_options(options[myplug.name])
                     presu = await myplug.provision(ifaceinfo[self.iface]["ip"][0],self.ssid,self.psk,self.ssid_encrypt)
                     if not myplug.go_on or not self.is_shared:
                         xx = await self.wifi_disconnect(netid)

@@ -63,6 +63,8 @@ parser.add_argument("-p","--password", default='',
                     help="The password that will control access to the device.")
 parser.add_argument("-o","--options", dest="options", action=OptionString, nargs="*", metavar="<plugin>:opt1=val1, opt2=val2,..",
                     help="Option to be passed to plugins.")
+parser.add_argument("-v","--verbose", default=False, action="store_true",
+                    help="Print more information.")
 parser.add_argument("-d","--debug", default=False, action="store_true",
                     help="Print debug information.")
 
@@ -74,8 +76,10 @@ except Exception as e:
 
 if opts.debug:
     logging.basicConfig(level=logging.DEBUG)
+elif opts.verbose:
+    logging.basicConfig(level=logging.INFO)
 else:
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.ERROR)
 
 loop = asyncio.get_event_loop()
 #First let's make sure we have the needed commands
@@ -100,7 +104,7 @@ if not isset:
     print("Error: No interface could be selected")
 
 else:
-    print("Using interface {} with restore {}".format(provisioner.iface,provisioner.is_shared))
+    logging.info("Using interface {} with restore {}".format(provisioner.iface,provisioner.is_shared))
     resu=loop.run_until_complete(provisioner.provision(options=opts.options))
-    print("Got: {}".format(resu))
+    logging.info("Got: {}".format(resu))
 loop.close()

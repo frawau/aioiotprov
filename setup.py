@@ -5,7 +5,7 @@ from distutils.core import setup
 version = '0.0.1'
 
 setup(name='aioiotprov',
-    packages=['aioiotprov'],
+    packages=['aioiotprov','aioiotprov.plugins'],
     version=version,
     author='François Wautier',
     author_email='francois@wautier.eu',

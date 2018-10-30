@@ -438,9 +438,10 @@ class IoTProvision(object):
                     xx = await aio.sleep(5)
                     if cando[acell]["ip"] or cando[acell]["ipv6"]:
                         if cando[acell]["ip"]:
-                            xx= await run_cmd("ip","addr","add",cando[acell]["ip"],"dev",self.iface)
+                            xx= await run_cmd(["ip","addr","add",cando[acell]["ip"],"dev",self.iface])
                         if cando[acell]["ipv6"]:
-                            xx= await run_cmd("ip", "-6", "addr","add",cando[acell]["ip"],"dev",self.iface)
+                            xx= await run_cmd(["ip", "-6", "addr","add",cando[acell]["ip"],"dev",self.iface])
+                        ifaceinfo = await self.gather_netinfo(self.iface,False)
                     else:
                         cnt = 5
                         while cnt:

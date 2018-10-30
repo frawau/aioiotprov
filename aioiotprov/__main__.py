@@ -61,7 +61,7 @@ parser.add_argument("-u","--user", default='',
                     help="The user that will control access to the device")
 parser.add_argument("-p","--password", default='',
                     help="The password that will control access to the device.")
-parser.add_argument("-o","--options", dest="options", action=OptionString, nargs="*", metavar="<plugin>:opt1=val1, opt2=val2,..",
+parser.add_argument("-o","--options", dest="options", default={}, action=OptionString, nargs="*", metavar="<plugin>:opt1=val1, opt2=val2,..",
                     help="Option to be passed to plugins.")
 parser.add_argument("-v","--verbose", default=False, action="store_true",
                     help="Print more information.")

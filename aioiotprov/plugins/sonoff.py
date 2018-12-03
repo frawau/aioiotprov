@@ -149,6 +149,7 @@ class Sonoff(object):
             :returns: a dictionary of information or AGAIN if needed
             :rtype: list
         """
+        resu={}
         try:
             params = {"w":"1,1","s1":ssid,"p1":psk,"s2":ssid, "p2":psk,"h":"%s-%04d"}
             if self.mypassword:
@@ -163,10 +164,11 @@ class Sonoff(object):
                         logging.debug(resp.url)
                         logging.debug("Sonoff: Response status was {}".format(resp.status))
             logging.debug("Sonoff: Set SSID and key")
+            resu[self.mac] = {"type":"Sonoff"}
         except:
             logging.debug("Sonoff: Could not set SSID")
         await asyncio.sleep(2)
         self.go_on = False
-        return {}
+        return resu
 
 PluginObject=Sonoff

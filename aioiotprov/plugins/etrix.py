@@ -95,17 +95,20 @@ class Etrix(object):
             :returns: a dictionary of information or AGAIN if needed
             :rtype: list
         """
+        resu = {}
         try:
             params = {"s":ssid,"p":psk}
             async with aioh.ClientSession() as session:
                 async with session.request("get","http://192.168.4.1/wifisave",params=params) as resp:
                     logging.debug(resp.url)
                     logging.debug("e-Trix: Response status was {}".format(resp.status))
+                    if resp.status == 200:
+                        resu[self.mac]={"type":"e-trix"}
             logging.debug("e-Trix: Set SSID and key")
         except:
             logging.debug("e-Trix: Could not set SSID")
         await asyncio.sleep(2)
         self.go_on = False
-        return {}
+        return resu
 
 PluginObject=Etrix

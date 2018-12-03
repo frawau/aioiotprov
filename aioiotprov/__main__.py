@@ -26,7 +26,7 @@
 #
 import argparse,os,sys,asyncio
 import aioiotprov as aiop
-import logging
+import logging,json
 
 class OptionString(argparse.Action):
      def __init__(self, option_strings, dest, nargs=None, **kwargs):
@@ -65,6 +65,8 @@ parser.add_argument("-o","--options", dest="options", default={}, action=OptionS
                     help="Option to be passed to plugins.")
 parser.add_argument("-v","--verbose", default=False, action="store_true",
                     help="Print more information.")
+parser.add_argument("-j","--json", default=False, action="store_true",
+                    help="Print result as json.")
 parser.add_argument("-d","--debug", default=False, action="store_true",
                     help="Print debug information.")
 
@@ -107,4 +109,6 @@ else:
     logging.info("Using interface {} with restore {}".format(provisioner.iface,provisioner.is_shared))
     resu=loop.run_until_complete(provisioner.provision(options=opts.options))
     logging.info("Got: {}".format(resu))
+    if opts.json:
+        print(json.dumps(resu))
 loop.close()

@@ -27,6 +27,7 @@
 import asyncio
 from struct import pack
 import logging
+import json
 
 # Encryption and Decryption of TP-Link Smart Home Protocol
 # XOR Autokey Cipher with starting key = 171
@@ -122,9 +123,17 @@ class TPLink(object):
         logging.debug('TP-Link: Send: %r' % message)
         writer.write(encrypt(message))
         data = await reader.read(100)
-        logging.debug('Received: %r' % decrypt(data))
+        data = json.loads(decrypt(data)[4:])
+        logging.debug('Received: %r' % data)
         writer.close()
         self.go_on = False
-        return {}
+        resu = {}
+        try:
+            if data['netif']['set_stainfo']['err_code'] == 0:
+                resu[data['netif']['set_stainfo']['mac']] = {"type":"TP-Link"}
+        except:
+            pass
+        finally:
+            return resu
 
 PluginObject=TPLink

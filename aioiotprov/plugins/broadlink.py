@@ -163,6 +163,6 @@ class Broadlink(object):
         xx = await coro
         await asyncio.sleep(3)
         self.go_on = False
-        return {}
+        return {self.mac:{"type":"broadlink"}}
 
 PluginObject=Broadlink

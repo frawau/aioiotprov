@@ -123,7 +123,7 @@ class TPLink(object):
         logging.debug('TP-Link: Send: %r' % message)
         writer.write(encrypt(message))
         data = await reader.read(100)
-        data = json.loads(decrypt(data)[4:])
+        data = json.loads(decrypt(data[4:]))
         logging.debug('Received: %r' % data)
         writer.close()
         self.go_on = False

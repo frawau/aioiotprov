@@ -67,6 +67,8 @@ parser.add_argument("-v","--verbose", default=False, action="store_true",
                     help="Print more information.")
 parser.add_argument("-j","--json", default=False, action="store_true",
                     help="Print result as json.")
+parser.add_argument("-l","--list", default=False, action="store_true",
+                    help="Just list the available SSID.")
 parser.add_argument("-d","--debug", default=False, action="store_true",
                     help="Print debug information.")
 
@@ -97,18 +99,25 @@ provisioner.set_secure(opts.user,opts.password)
 #First find out what interfaces are available
 interfaces = loop.run_until_complete(provisioner.gather_netinfo())
 
-if not provisioner.cells:
-    print("Error: There seem to be no wifi adapter")
-    sys.exit(2)
-
-isset = provisioner.select_iface(interfaces,provisioner.cells)
-if not isset:
-    print("Error: No interface could be selected")
-
+if opts.list:
+    loc=set()
+    for aloc in provisioner.cells.values():
+        for acell in [x['ssid'] for x in aloc]:
+            loc.add(acell)
+    print(json.dumps(list(loc)))
 else:
-    logging.info("Using interface {} with restore {}".format(provisioner.iface,provisioner.is_shared))
-    resu=loop.run_until_complete(provisioner.provision(options=opts.options))
-    logging.info("Got: {}".format(resu))
-    if opts.json:
-        print(json.dumps(resu))
+    if not provisioner.cells:
+        print("Error: There seem to be no wifi adapter")
+        sys.exit(2)
+
+    isset = provisioner.select_iface(interfaces,provisioner.cells)
+    if not isset:
+        print("Error: No interface could be selected")
+
+    else:
+        logging.info("Using interface {} with restore {}".format(provisioner.iface,provisioner.is_shared))
+        resu=loop.run_until_complete(provisioner.provision(options=opts.options))
+        logging.info("Got: {}".format(resu))
+        if opts.json:
+            print(json.dumps(resu))
 loop.close()

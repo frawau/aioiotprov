@@ -388,7 +388,7 @@ class IoTProvision(object):
             if driver.endswith(module):
                 logging.debug("Work around for {}".format(module))
                 xx = await run_cmd(["rmmod", module])
-                xx = await aio.sleep(1)
+                xx = await aio.sleep(2)
                 xx = await run_cmd(["modprobe", module])
                 xx = await aio.sleep(1)
 

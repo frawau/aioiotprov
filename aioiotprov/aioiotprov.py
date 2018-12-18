@@ -84,7 +84,7 @@ def parse_ifaces(content):
 
 
 def parse_cells(content):
-    """This function parses the output of the command "wpa_cli  scan_result"
+    """This function parses the output of the command "/sbin/wpa_cli  scan_result"
 
        This function returns the parsed content as a list of dictionary.
        Each dictionary describes one scanned cell: ESSID,
@@ -185,7 +185,7 @@ async def run_inter_cmd(cmd,icmd,parse=None):
             return stdout.decode()
 
 
-async def check_system(neededcmd=["ip","wpa_supplicant","wpa_cli"]):
+async def check_system(neededcmd=["ip","wpa_supplicant","/sbin/wpa_cli"]):
     """Coroutine to check that a number of shell commands can be used.
 
         :param neededcmd: A list of the command to be checked
@@ -279,16 +279,16 @@ class IoTProvision(object):
 
         """
         if iface:
-            interfaces = await run_cmd(["sudo", "ip", "addr", "show", "dev", iface], parse_ifaces)
+            interfaces = await run_cmd(["sudo", "/sbin/ip", "addr", "show", "dev", iface], parse_ifaces)
         else:
-            interfaces = await run_cmd(["sudo", "ip", "addr"], parse_ifaces)
+            interfaces = await run_cmd(["sudo", "/sbin/ip", "addr"], parse_ifaces)
             self.interface = interfaces
         if cells_too:
             for iface in interfaces:
-                iswifi = await run_cmd(["sudo", "wpa_cli","-i",iface,"scan"])
+                iswifi = await run_cmd(["sudo", "/sbin/wpa_cli","-i",iface,"scan"])
                 if iswifi and iswifi.strip().lower() == "ok":
                     await aio.sleep(4)
-                    self.cells[iface] = await run_cmd(["sudo", "wpa_cli", "-i", iface, "scan_result"], parse_cells)
+                    self.cells[iface] = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", iface, "scan_result"], parse_cells)
         return interfaces
 
 
@@ -338,7 +338,7 @@ class IoTProvision(object):
             :rtype: int
 
         """
-        netid= int(await run_cmd(["sudo", "wpa_cli", "-i", self.iface, "add_network"]))
+        netid= int(await run_cmd(["sudo", "/sbin/wpa_cli", "-i", self.iface, "add_network"]))
         if psk and not is_wep:
             wpacmd = ["set_network %d ssid \"%s\""%(netid,ssid),
                     "set_network %d psk \"%s\""%(netid,psk),
@@ -360,7 +360,7 @@ class IoTProvision(object):
                     3,
                     "quit"]
 
-        resul = await run_inter_cmd(["wpa_cli", "-i", self.iface],wpacmd)
+        resul = await run_inter_cmd(["/sbin/wpa_cli", "-i", self.iface],wpacmd)
         logging.debug("{}".format(resul))
         return netid
 
@@ -375,21 +375,21 @@ class IoTProvision(object):
 
         """
         logging.debug("Disconnecting {}".format(self.iface))
-        xx = await run_cmd(["sudo", "wpa_cli", "-i", self.iface,"bss_flush"])
-        xx = await run_cmd(["sudo", "wpa_cli", "-i", self.iface,"disable_network", str(netid)])
-        xx = await run_cmd(["sudo", "wpa_cli", "-i", self.iface,"remove_network", str(netid)])
-        xx = await run_cmd(["sudo", "ip", "link","set","down","dev", self.iface])
-        xx = await run_cmd(["sudo", "ip", "link","set","up","dev", self.iface])
+        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", self.iface,"bss_flush"])
+        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", self.iface,"disable_network", str(netid)])
+        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", self.iface,"remove_network", str(netid)])
+        xx = await run_cmd(["sudo", "/sbin/ip", "link","set","down","dev", self.iface])
+        xx = await run_cmd(["sudo", "/sbin/ip", "link","set","up","dev", self.iface])
         #Work around bug with 8192cu
         for module in BUGGYMODULE:
-            driver = await run_cmd(["sudo", "readlink", "/sys/class/net/%s/device/driver"%self.iface])
+            driver = await run_cmd(["sudo", "/bin/readlink", "/sys/class/net/%s/device/driver"%self.iface])
             driver = driver.strip()
             logging.debug("Driver is {} it does{}end by {}".format(driver,driver.endswith(module) and " " or " not ",module))
             if driver.endswith(module):
                 logging.debug("Work around for {}".format(module))
-                xx = await run_cmd(["sudo", "rmmod", module])
+                xx = await run_cmd(["sudo", "/sbin/rmmod", module])
                 xx = await aio.sleep(2)
-                xx = await run_cmd(["sudo", "modprobe", module])
+                xx = await run_cmd(["sudo", "/sbin/modprobe", module])
                 xx = await aio.sleep(1)
 
     async def wifi_reset(self):
@@ -399,8 +399,8 @@ class IoTProvision(object):
             :rtype: None
 
         """
-        xx = await run_cmd(["sudo", "wpa_cli", "-i", self.iface,"bss_flush"])
-        xx = await run_cmd(["sudo", "wpa_cli", "-i", self.iface,"reconfigure"])
+        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", self.iface,"bss_flush"])
+        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", self.iface,"reconfigure"])
 
 
     async def provision(self,plugins=None,options={}):
@@ -440,9 +440,9 @@ class IoTProvision(object):
                     xx = await aio.sleep(5)
                     if cando[acell]["ip"] or cando[acell]["ipv6"]:
                         if cando[acell]["ip"]:
-                            xx= await run_cmd(["sudo", "ip","addr","add",cando[acell]["ip"],"dev",self.iface])
+                            xx= await run_cmd(["sudo", "/sbin/ip","addr","add",cando[acell]["ip"],"dev",self.iface])
                         if cando[acell]["ipv6"]:
-                            xx= await run_cmd(["sudo", "ip", "-6", "addr","add",cando[acell]["ip"],"dev",self.iface])
+                            xx= await run_cmd(["sudo", "/sbin/ip", "-6", "addr","add",cando[acell]["ip"],"dev",self.iface])
                         ifaceinfo = await self.gather_netinfo(self.iface,False)
                     else:
                         cnt = 5

@@ -419,6 +419,8 @@ class IoTProvision(object):
                 if cdef["ssid"] ==self.ssid:
                     self.ssid_encrypt = cdef["encryption"]
                     break
+        if self.ssid_encrypt == None:
+            self.ssid_encrypt="none"
         for aplug in loplugins.values():
             cando = aplug.can_handle([x["ssid"] for x in self.cells[self.iface]])
             #

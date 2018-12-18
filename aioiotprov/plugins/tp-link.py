@@ -93,7 +93,7 @@ class TPLink(object):
         await asyncio.sleep(0)
 
 
-    async def provision(self, ip, ssid, psk, ktype):
+    async def provision(self, ip, ssid, psk, ktype="none"):
         """Coroutine to perform provisioning
 
            As long as this method returns AGAIN, this coroutine must be called after switching

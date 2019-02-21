@@ -83,56 +83,239 @@ def parse_ifaces(content):
     return loiface
 
 
-def parse_cells(content):
-    """This function parses the output of the command "/sbin/wpa_cli  scan_result"
+class WiFiManager(object):
+    
+    def __init__(self):
+        pass
+    
+class WPAWiFiManager(WiFiManager):
+    
+    def parse_cells(self, content):
+        """This function parses the output of the command "/sbin/wpa_cli  scan_result"
 
-       This function returns the parsed content as a list of dictionary.
-       Each dictionary describes one scanned cell: ESSID,
-       Encryption, BSSID
+        This function returns the parsed content as a list of dictionary.
+        Each dictionary describes one scanned cell: ESSID,
+        Encryption, BSSID
 
 
-        :param content: A string to be parsed
-        :type cmd: str
-        :returns: Parsed content as a list..
-        :rtype: list
-    """
-    locells = []
-    foundheader = False
-    lines = content.split('\n')
-    for line in lines:
-        if not line:
-            continue
-        thisline = [x for x in line.split("\t") if x.strip()]
-        if "bssid" in line.lower() and  "ssid" in line.lower():
-            foundheader = True
-            continue
-        if foundheader:
+            :param content: A string to be parsed
+            :type cmd: str
+            :returns: Parsed content as a list..
+            :rtype: list
+        """
+        foundheader = False
+        lines = content.split('\n')
+        locells = []
+        for line in lines:
+            if not line:
+                continue
+            thisline = [x for x in line.split("\t") if x.strip()]
+            if "bssid" in line.lower() and  "ssid" in line.lower():
+                foundheader = True
+                continue
+            if foundheader:
+                try:
+                    acell={}
+                    acell["bssid"]=thisline[0]
+                    if "[" in thisline[3]:
+                        if "WPA2" in thisline[3]:
+                            acell["encryption"]="wpa2"
+                        elif "WPA" in thisline[3]:
+                            acell["encryption"]="wpa"
+                        elif "WEP" in thisline[3]:
+                            acell["encryption"]="wep"
+                        else:
+                            acell["encryption"]="none"
+                        acell["ssid"]=thisline[4]
+                    else:
+                        acell["encryption"]="none"
+                        acell["ssid"]=thisline[3]
+
+                    locells.append(acell)
+                except:
+                    #In all likelyhood, a hidden SSID, ignore those
+                    pass
+
+        logging.debug ("--> {}".format(locells))
+        return locells
+    
+    async def gather_cellinfo(self, interfaces):
+        
+        cells = {}
+        for iface in interfaces:
+            iswifi = await run_cmd(["sudo", "/sbin/wpa_cli","-i",iface,"scan"])
+            if iswifi and iswifi.strip().lower() == "ok":
+                await aio.sleep(4)
+                cells[iface] = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", iface, "scan_result"], self.parse_cells)
+        return cells
+    
+    async def wifi_connect(self, iface, ssid, psk=None,is_wep=False):
+        """Connect to the given wifi network.
+
+            :param ssid: Name of the cell to connect to
+            :type ssid: str
+            :param psk: Key to use
+            :type psk: str
+            :returns: id of the network
+            :rtype: int
+
+        """
+        netid= int(await run_cmd(["sudo", "/sbin/wpa_cli", "-i", iface, "add_network"]))
+        if psk and not is_wep:
+            wpacmd = ["set_network %d ssid \"%s\""%(netid,ssid),
+                    "set_network %d psk \"%s\""%(netid,psk),
+                    "enable_network %d"%netid,
+                    3,
+                    "quit"]
+        elif psk and is_wep:
+            wpacmd = ["set_network %d ssid \"%s\""%(netid,ssid),
+                    "set_network %d key_mgmt NONE"%(netid),
+                    "set_network %d wep_key0 %s"%(netid,psk),
+                    "set_network %d auth_alg SHARED"%(netid),
+                    "enable_network %d"%netid,
+                    3,
+                    "quit"]
+        else:
+            wpacmd = ["set_network %d ssid \"%s\""%(netid,ssid),
+                    "set_network %d key_mgmt NONE"%(netid),
+                    "enable_network %d"%netid,
+                    3,
+                    "quit"]
+
+        resul = await run_inter_cmd(["/sbin/wpa_cli", "-i", iface],wpacmd)
+        logging.debug("{}".format(resul))
+        return netid
+
+    async def wifi_disconnect(self, iface, netid):
+        """Connect to the given wifi network.
+
+            :param netid: Network id, Got when connecting
+            :type netid: int
+            :returns: None
+            :rtype: None
+
+        """
+        logging.debug("Disconnecting {}".format(iface))
+        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", iface,"bss_flush"])
+        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", iface,"disable_network", str(netid)])
+        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", iface,"remove_network", str(netid)])
+        xx = await run_cmd(["sudo", "/sbin/ip", "link","set","down","dev", iface])
+        xx = await run_cmd(["sudo", "/sbin/ip", "link","set","up","dev", iface])
+        #Work around bug with 8192cu
+        for module in BUGGYMODULE:
+            driver = await run_cmd(["sudo", "/bin/readlink", "/sys/class/net/%s/device/driver"%iface])
+            driver = driver.strip()
+            logging.debug("Driver is {} it does{}end by {}".format(driver,driver.endswith(module) and " " or " not ",module))
+            if driver.endswith(module):
+                logging.debug("Work around for {}".format(module))
+                xx = await run_cmd(["sudo", "/sbin/rmmod", module])
+                xx = await aio.sleep(2)
+                xx = await run_cmd(["sudo", "/sbin/modprobe", module])
+                xx = await aio.sleep(1)
+
+    async def wifi_reset(self, iface):
+        """Connect to the given wifi network.
+
+            :returns: None
+            :rtype: None
+
+        """
+        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", iface,"bss_flush"])
+        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", iface,"reconfigure"])
+        
+      
+class NMWiFiManager(WiFiManager):
+    
+    def parse_cells(self, content):
+        """This function parses the output of the command "nmcli -t -f ssid,security -c no device wifi list"
+
+        This function returns the parsed content as a list of dictionary.
+        Each dictionary describes one scanned cell: ESSID,
+        Encryption, BSSID
+
+
+            :param content: A string to be parsed
+            :type cmd: str
+            :returns: Parsed content as a list..
+            :rtype: list
+        """
+        locells = {}
+        lines = content.split('\n')
+        for line in lines:
+            if not line:
+                continue
+            thisline = [x for x in line.split(":") if x.strip()]
+            if len(thisline) == 0 or thisline[0] in ["--",""]:
+                continue
             try:
                 acell={}
-                acell["bssid"]=thisline[0]
-                if "[" in thisline[3]:
-                    if "WPA2" in thisline[3]:
+                acell["ssid"]=thisline[0]
+                if len(thisline) > 1:
+                    if "WPA2" in thisline[1]:
                         acell["encryption"]="wpa2"
-                    elif "WPA" in thisline[3]:
+                    elif "WPA" in thisline[1]:
                         acell["encryption"]="wpa"
-                    elif "WEP" in thisline[3]:
+                    elif "WEP" in thisline[1]:
                         acell["encryption"]="wep"
                     else:
                         acell["encryption"]="none"
-                    acell["ssid"]=thisline[4]
                 else:
                     acell["encryption"]="none"
-                    acell["ssid"]=thisline[3]
 
                 locells.append(acell)
             except:
                 #In all likelyhood, a hidden SSID, ignore those
                 pass
 
-    logging.debug ("--> {}".format(locells))
-    return locells
+        logging.debug ("--> {}".format(locells))
+        return locells
+    
+    async def gather_cellinfo(self, interfaces):
+        
+        cells = {}
+        iswifi = await run_cmd(["sudo", "/usr/bin/nmcli", "device", "wifi", "rescan"])
+        #TDO check returned values
+        await aio.sleep(4)
+        allcells = await run_cmd(["sudo", "/usr/bin/nmcli", "-t", "-f", "ssid,security", "-c", "no", "device", "wifi", "list"], self.parse_cells)
+        for iface in interfaces:
+            cells[iface]=allcells
+        return cells
+    
+    async def wifi_connect(self, iface, ssid, psk=None,is_wep=False):
+        """Connect to the given wifi network.
 
+            :param ssid: Name of the cell to connect to
+            :type ssid: str
+            :param psk: Key to use
+            :type psk: str
+            :returns: id of the network
+            :rtype: int
 
+        """
+        con = await run_cmd(["sudo", "nmcli", "device", "wifi", "connect", ssid, "password", psk, "ifname", iface])
+        return None
+    
+    async def wifi_disconnect(self, iface, netid):
+        """Connect to the given wifi network.
+
+            :param netid: Network id, Got when connecting
+            :type netid: int
+            :returns: None
+            :rtype: None
+
+        """
+        logging.debug("Disconnecting {}".format(iface))
+        con = await run_cmd(["sudo", "mcli", "device", "disconnect", iface])
+    
+    async def wifi_reset(self, iface):
+        """Connect to the given wifi network.
+
+            :returns: None
+            :rtype: None
+
+        """
+        pass
+    
 async def run_cmd(cmd,parse=None):
     """This coroutine runs a shell command within the asyncio framework
 
@@ -232,7 +415,7 @@ def load_plugins(needed=None):
 
 class IoTProvision(object):
 
-    def __init__(self,ssid, psk=""):
+    def __init__(self,ssid, psk="", manager=WPAWiFiManager()):
         """Create a IoTProvision object
 
         :param ssid: The SSID to connect the device to
@@ -251,6 +434,7 @@ class IoTProvision(object):
         self.iface=None
         self.is_shared = False
         self.interfaces = {}
+        self.wifimanager = manager
 
     def set_secure(self, user, passw):
         """Set the username and password to secure the device with.
@@ -279,17 +463,13 @@ class IoTProvision(object):
 
         """
         if iface:
-            interfaces = await run_cmd(["sudo", "/sbin/ip", "addr", "show", "dev", iface], parse_ifaces)
+            self.interfaces = await run_cmd(["sudo", "/sbin/ip", "addr", "show", "dev", iface], parse_ifaces)
         else:
-            interfaces = await run_cmd(["sudo", "/sbin/ip", "addr"], parse_ifaces)
-            self.interface = interfaces
+            self.interfaces = await run_cmd(["sudo", "/sbin/ip", "addr"], parse_ifaces)
+    
         if cells_too:
-            for iface in interfaces:
-                iswifi = await run_cmd(["sudo", "/sbin/wpa_cli","-i",iface,"scan"])
-                if iswifi and iswifi.strip().lower() == "ok":
-                    await aio.sleep(4)
-                    self.cells[iface] = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", iface, "scan_result"], parse_cells)
-        return interfaces
+            self.cells = await self.wifimanager.gather_cellinfo(self.interfaces)
+        return self.interfaces
 
 
 
@@ -338,33 +518,8 @@ class IoTProvision(object):
             :rtype: int
 
         """
-        netid= int(await run_cmd(["sudo", "/sbin/wpa_cli", "-i", self.iface, "add_network"]))
-        if psk and not is_wep:
-            wpacmd = ["set_network %d ssid \"%s\""%(netid,ssid),
-                    "set_network %d psk \"%s\""%(netid,psk),
-                    "enable_network %d"%netid,
-                    3,
-                    "quit"]
-        elif psk and is_wep:
-            wpacmd = ["set_network %d ssid \"%s\""%(netid,ssid),
-                    "set_network %d key_mgmt NONE"%(netid),
-                    "set_network %d wep_key0 %s"%(netid,psk),
-                    "set_network %d auth_alg SHARED"%(netid),
-                    "enable_network %d"%netid,
-                    3,
-                    "quit"]
-        else:
-            wpacmd = ["set_network %d ssid \"%s\""%(netid,ssid),
-                    "set_network %d key_mgmt NONE"%(netid),
-                    "enable_network %d"%netid,
-                    3,
-                    "quit"]
-
-        resul = await run_inter_cmd(["/sbin/wpa_cli", "-i", self.iface],wpacmd)
-        logging.debug("{}".format(resul))
-        return netid
-
-
+        return await self.wifimanager.wifi_connect(self.iface, ssid, psk, is_wep)
+        
     async def wifi_disconnect(self, netid):
         """Connect to the given wifi network.
 
@@ -374,23 +529,7 @@ class IoTProvision(object):
             :rtype: None
 
         """
-        logging.debug("Disconnecting {}".format(self.iface))
-        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", self.iface,"bss_flush"])
-        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", self.iface,"disable_network", str(netid)])
-        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", self.iface,"remove_network", str(netid)])
-        xx = await run_cmd(["sudo", "/sbin/ip", "link","set","down","dev", self.iface])
-        xx = await run_cmd(["sudo", "/sbin/ip", "link","set","up","dev", self.iface])
-        #Work around bug with 8192cu
-        for module in BUGGYMODULE:
-            driver = await run_cmd(["sudo", "/bin/readlink", "/sys/class/net/%s/device/driver"%self.iface])
-            driver = driver.strip()
-            logging.debug("Driver is {} it does{}end by {}".format(driver,driver.endswith(module) and " " or " not ",module))
-            if driver.endswith(module):
-                logging.debug("Work around for {}".format(module))
-                xx = await run_cmd(["sudo", "/sbin/rmmod", module])
-                xx = await aio.sleep(2)
-                xx = await run_cmd(["sudo", "/sbin/modprobe", module])
-                xx = await aio.sleep(1)
+        await self.wifimanager.wifi_disconnect(self.iface,netid)
 
     async def wifi_reset(self):
         """Connect to the given wifi network.
@@ -399,8 +538,7 @@ class IoTProvision(object):
             :rtype: None
 
         """
-        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", self.iface,"bss_flush"])
-        xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", self.iface,"reconfigure"])
+        await self.wifimanager.wifi_reset(self.iface)
 
 
     async def provision(self,plugins=None,options={}):

@@ -43,7 +43,7 @@ class Shelly(object):
         """
         self.go_on=True
         self.myid = "".join(mac.split(":")[-3:]).upper()
-        self.mypassword = ""
+        self.myauth = None
         self.mac = mac
 
     @classmethod
@@ -67,9 +67,8 @@ class Shelly(object):
     async def secure(self,user,passwd):
         """ Setting the password... and remembering it for subsequent access """
         if passwd:
-            self.mypassword = passwd
             params={"enabled": 1, "username": user,"password":passwd}
-            auth = aioh.BasicAuth(login=user, password=self.mypassword)
+            self.myauth = aioh.BasicAuth(login=user, password=passwd)
             async with aioh.ClientSession(auth=auth) as session:
                 async with session.request("get","http://192.168.33.1/settings/login",params=params) as resp:
                     logging.debug(resp.url)
@@ -93,7 +92,7 @@ class Shelly(object):
 
         """
         logging.debug("options --> {}".format(options))
-        if "mqtt" in options and options["mqtt"] in [True, "on", 1]:
+        if "mqtt" in options and options["mqtt"] in [True, "on", 1, '1']:
             if "host" in options:
                 #All parameters shouuld be there I think
                 params={"mqtt_enable": 1 }
@@ -105,7 +104,7 @@ class Shelly(object):
                     params["mqtt_host"]+=":"+options["port"]
                 else:
                      params["mqtt_host"]+=":1883"
-                async with aioh.ClientSession(auth=auth) as session:
+                async with aioh.ClientSession(auth=self.myauth) as session:
                     async with session.request("get","http://192.168.33.1/settings",params={"mqtt":params}) as resp:
                         logging.debug(resp.url)
                         logging.debug("Shelly: Response status was {}".format(resp.status))

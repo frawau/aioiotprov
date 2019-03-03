@@ -43,7 +43,7 @@ class Sonoff(object):
         """
         self.go_on=True
         self.myid = "".join(mac.split(":")[-3:]).upper()
-        self.mypassword = ""
+        self.myauth = None
         self.mac = mac
 
     @classmethod
@@ -67,20 +67,19 @@ class Sonoff(object):
     async def secure(self,user,passwd):
         """ Setting the password... and remembering it for subsequent access """
         if passwd:
-            self.mypassword = passwd
             params={"w":"5,1","p1":passwd,"a1":"Sonoff-%s"%self.myid,"b2":0}
-            auth = aioh.BasicAuth(login="admin", password=self.mypassword)
+            self.myauth = aioh.BasicAuth(login="admin", password=passwd)
             async with aioh.ClientSession(auth=auth) as session:
                 async with session.request("get","http://192.168.4.1/sv",params=params) as resp:
                     logging.debug(resp.url)
                     logging.debug("Sonoff: Response status was {}".format(resp.status))
                     if resp.status != 200:
-                        self.mypassword = ""
+                        self.myauth = None
                     try:
                         logging.debug("Sonoff: Response was {}".format( await resp.text()))
                     except:
                         pass
-                    logging.debug("Sonoff: Password %sset"%((self.mypassword=="" and "not") or "" ))
+                    logging.debug("Sonoff: Password %sset"%((self.myauth is None and "not") or "" ))
             await asyncio.sleep(DELAY)
         else:
             await asyncio.sleep(0)
@@ -98,13 +97,8 @@ class Sonoff(object):
                 params={"w":"5,1","b1":"on","a1":"Sonoff-%s"%self.myid}
             else:
                 params={"w":"5,1","a1":"Sonoff-%s"%self.myid}
-            if self.mypassword:
-                auth = aioh.BasicAuth(login="admin", password=self.mypassword)
-            else:
-                auth = None
-
             #Set MQTT
-            async with aioh.ClientSession(auth=auth) as session:
+            async with aioh.ClientSession(auth=self.myauth) as session:
                 async with session.request("get","http://192.168.4.1/sv",params=params) as resp:
                     logging.debug(resp.url)
                     logging.debug("Sonoff: Response status was {}".format(resp.status))
@@ -152,17 +146,11 @@ class Sonoff(object):
         resu={}
         try:
             params = {"w":"1,1","s1":ssid,"p1":psk,"s2":ssid, "p2":psk,"h":"%s-%04d"}
-            if self.mypassword:
-                auth = aioh.BasicAuth(login="admin", password=self.mypassword)
-                async with aioh.ClientSession(auth=auth) as session:
-                    async with session.request("get","http://192.168.4.1/sv",params=params) as resp:
-                        logging.debug(resp.url)
-                        logging.debug("Sonoff: Response status was {}".format(resp.status))
-            else:
-                async with aioh.ClientSession() as session:
-                    async with session.request("get","http://192.168.4.1/sv",params=params) as resp:
-                        logging.debug(resp.url)
-                        logging.debug("Sonoff: Response status was {}".format(resp.status))
+            async with aioh.ClientSession(auth=self.myauth) as session:
+                async with session.request("get","http://192.168.4.1/sv",params=params) as resp:
+                    logging.debug(resp.url)
+                    logging.debug("Sonoff: Response status was {}".format(resp.status))
+
             logging.debug("Sonoff: Set SSID and key")
             resu[self.mac] = {"type":"Sonoff"}
         except:

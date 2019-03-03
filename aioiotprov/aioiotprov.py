@@ -323,7 +323,7 @@ class NMWiFiManager(WiFiManager):
             :rtype: None
 
         """
-        self.wifi_connect(iface, ssid,psk)
+        await self.wifi_connect(iface, ssid,psk)
 
 async def run_cmd(cmd,parse=None):
     """This coroutine runs a shell command within the asyncio framework

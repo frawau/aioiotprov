@@ -69,7 +69,7 @@ class Shelly(object):
         if passwd:
             params={"enabled": 1, "username": user,"password":passwd}
             self.myauth = aioh.BasicAuth(login=user, password=passwd)
-            async with aioh.ClientSession(auth=auth) as session:
+            async with aioh.ClientSession(auth=self.myauth) as session:
                 async with session.request("get","http://192.168.33.1/settings/login",params=params) as resp:
                     logging.debug(resp.url)
                     logging.debug("Shelly: Response status was {}".format(resp.status))

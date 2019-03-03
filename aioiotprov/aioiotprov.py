@@ -239,7 +239,7 @@ class NMWiFiManager(WiFiManager):
             :returns: Parsed content as a list..
             :rtype: list
         """
-        locells = {}
+        locells = []
         lines = content.split('\n')
         for line in lines:
             if not line:
@@ -416,7 +416,7 @@ def load_plugins(needed=None):
 
 class IoTProvision(object):
 
-    def __init__(self,ssid, psk="", manager=WPAWiFiManager()):
+    def __init__(self,ssid, psk="", manager=NMWiFiManager()):
         """Create a IoTProvision object
 
         :param ssid: The SSID to connect the device to

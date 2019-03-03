@@ -26,7 +26,7 @@
 #
 import argparse,os,sys,asyncio
 import aioiotprov as aiop
-import logging,json
+import logging,json,shutil
 
 class OptionString(argparse.Action):
      def __init__(self, option_strings, dest, nargs=None, **kwargs):
@@ -72,6 +72,14 @@ parser.add_argument("-l","--list", default=False, action="store_true",
 parser.add_argument("-d","--debug", default=False, action="store_true",
                     help="Print debug information.")
 
+if shutil.which('nmcli'):
+    wifictl = aiop.NMWiFiManager()
+elif shutil.which('wpa_cli'):
+    wifictl = aiop.WPAWiFiManager()
+else:
+    print("Error: Do not know how to managge WiFi interfaces. Neither 'nmcli' nor 'wpa_cli' are present.")
+    sys.exit(1)
+
 try:
     opts = parser.parse_args()
 except Exception as e:
@@ -93,7 +101,7 @@ if not isok:
     loop.close()
     sys.exit(1)
 
-provisioner= aiop.IoTProvision(opts.ssid,opts.passphrase)
+provisioner= aiop.IoTProvision(opts.ssid,opts.passphrase, manager=wifictl)
 provisioner.set_secure(opts.user,opts.password)
 
 #First find out what interfaces are available

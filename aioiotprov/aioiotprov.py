@@ -213,7 +213,7 @@ class WPAWiFiManager(WiFiManager):
                 xx = await run_cmd(["sudo", "/sbin/modprobe", module])
                 xx = await aio.sleep(1)
 
-    async def wifi_reset(self, iface):
+    async def wifi_reset(self, iface, ssid, psk):
         """Connect to the given wifi network.
 
             :returns: None
@@ -316,14 +316,14 @@ class NMWiFiManager(WiFiManager):
         logging.debug("Disconnecting {}".format(iface))
         con = await run_cmd(["sudo", "nmcli", "device", "disconnect", iface])
 
-    async def wifi_reset(self, iface):
+    async def wifi_reset(self, iface, ssid, psk):
         """Connect to the given wifi network.
 
             :returns: None
             :rtype: None
 
         """
-        pass
+        self.wifi_connect(iface, ssid,psk)
 
 async def run_cmd(cmd,parse=None):
     """This coroutine runs a shell command within the asyncio framework
@@ -547,7 +547,7 @@ class IoTProvision(object):
             :rtype: None
 
         """
-        await self.wifimanager.wifi_reset(self.iface)
+        await self.wifimanager.wifi_reset(self.iface, self.ssid, self.psk)
 
 
     async def provision(self,plugins=None,options={}):

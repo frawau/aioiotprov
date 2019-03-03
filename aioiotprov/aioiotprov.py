@@ -239,7 +239,7 @@ class NMWiFiManager(WiFiManager):
             :returns: Parsed content as a list..
             :rtype: list
         """
-        locells = {}
+        locells = []
         lines = content.split('\n')
         for line in lines:
             if not line:
@@ -272,13 +272,21 @@ class NMWiFiManager(WiFiManager):
         return locells
 
     async def gather_cellinfo(self, interfaces):
-
+        wifaces = []
+        iswifi = await run_cmd(["sudo", "/usr/bin/nmcli", "-t", "-f", "device,type", "device", "status"])
+        lines = iswifi.split('\n')
+        for line in lines:
+            if not line:
+                continue
+            thisline = [x for x in line.split(":")]
+            if thisline[1] == "wifi"
+            wifaces.append(thisline[0].strip()]
         cells = {}
         iswifi = await run_cmd(["sudo", "/usr/bin/nmcli", "device", "wifi", "rescan"])
         #TDO check returned values
         await aio.sleep(4)
         allcells = await run_cmd(["sudo", "/usr/bin/nmcli", "-t", "-f", "ssid,security,bssid", "-c", "no", "device", "wifi", "list"], self.parse_cells)
-        for iface in interfaces:
+        for iface in wifaces:
             cells[iface]=allcells
         return cells
 
@@ -306,7 +314,7 @@ class NMWiFiManager(WiFiManager):
 
         """
         logging.debug("Disconnecting {}".format(iface))
-        con = await run_cmd(["sudo", "mcli", "device", "disconnect", iface])
+        con = await run_cmd(["sudo", "nmcli", "device", "disconnect", iface])
 
     async def wifi_reset(self, iface):
         """Connect to the given wifi network.
@@ -416,7 +424,7 @@ def load_plugins(needed=None):
 
 class IoTProvision(object):
 
-    def __init__(self,ssid, psk="", manager=WPAWiFiManager()):
+    def __init__(self,ssid, psk="", manager=NMWiFiManager()):
         """Create a IoTProvision object
 
         :param ssid: The SSID to connect the device to

@@ -69,18 +69,22 @@ class Shelly(object):
         if passwd:
             params={"enabled": 1, "username": user,"password":passwd}
             self.myauth = aioh.BasicAuth(login=user, password=passwd)
-            async with aioh.ClientSession(auth=self.myauth) as session:
-                async with session.request("get","http://192.168.33.1/settings/login",params=params) as resp:
-                    logging.debug(resp.url)
-                    logging.debug("Shelly: Response status was {}".format(resp.status))
-                    if resp.status != 200:
-                        self.myauth = None
-                    try:
-                        logging.debug("Shelly: Response was {}".format( await resp.text()))
-                    except:
-                        pass
-                    logging.debug("Shelly: Password %sset"%((self.myauth is None and "not") or "" ))
-            await asyncio.sleep(DELAY)
+            try:
+                async with aioh.ClientSession(auth=self.myauth) as session:
+                    async with session.request("get","http://192.168.33.1/settings/login",params=params) as resp:
+                        logging.debug(resp.url)
+                        logging.debug("Shelly: Response status was {}".format(resp.status))
+                        if resp.status != 200:
+                            self.myauth = None
+                        try:
+                            logging.debug("Shelly: Response was {}".format( await resp.text()))
+                        except:
+                            pass
+                        logging.debug("Shelly: Password %sset"%((self.myauth is None and "not") or "" ))
+                await asyncio.sleep(DELAY)
+            except Exception as e:
+                logging.debug("Shelly: Something really went wrong when setting user/password: {}".format(e))
+                await asyncio.sleep(0)
         else:
             await asyncio.sleep(0)
 

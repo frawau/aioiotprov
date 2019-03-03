@@ -96,14 +96,14 @@ class Shelly(object):
             if "host" in options:
                 #All parameters shouuld be there I think
                 params={"mqtt_enable": 1 }
-                for k,o in [("host","mqtt_host"),("user","mqtt_user"),
+                for k,o in [("host","server"),("user","mqtt_user"),
                             ("password","mqtt_pass")]:
                     if k in options:
                         params[o]=options[k] #Set MQTT
                 if "port" in options:
-                    params["mqtt_host"]+=":"+options["port"]
+                    params["server"]+=":"+options["port"]
                 else:
-                     params["mqtt_host"]+=":1883"
+                     params["server"]+=":1883"
                 async with aioh.ClientSession(auth=self.myauth) as session:
                     async with session.request("get","http://192.168.33.1/settings/mqtt",params=params) as resp:
                         logging.debug(resp.url)

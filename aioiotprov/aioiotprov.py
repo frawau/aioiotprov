@@ -280,7 +280,7 @@ class NMWiFiManager(WiFiManager):
                 continue
             thisline = [x for x in line.split(":")]
             if thisline[1] == "wifi":
-                wifaces.append(thisline[0].strip()]
+                wifaces.append(thisline[0].strip())
         cells = {}
         iswifi = await run_cmd(["sudo", "/usr/bin/nmcli", "device", "wifi", "rescan"])
         #TDO check returned values

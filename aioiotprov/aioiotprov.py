@@ -250,7 +250,7 @@ class NMWiFiManager(WiFiManager):
             try:
                 acell={}
                 acell["ssid"]=thisline[0]
-                acell["bssid"]=":".join(thisline[2:]).replace("\\","")
+                acell["bssid"]=":".join(thisline[2:]).replace("\\","").lower()
                 if len(thisline) > 1:
                     if "WPA2" in thisline[1]:
                         acell["encryption"]="wpa2"

@@ -68,7 +68,7 @@ class Shelly(object):
         """ Setting the password... and remembering it for subsequent access """
         if passwd:
             self.mypassword = passwd
-            params={"enabled": True, "username": user,"password":passwd}
+            params={"enabled": 1, "username": user,"password":passwd}
             auth = aioh.BasicAuth(login=user, password=self.mypassword)
             async with aioh.ClientSession(auth=auth) as session:
                 async with session.request("get","http://192.168.33.1/settings/login",params=params) as resp:
@@ -96,7 +96,7 @@ class Shelly(object):
         if "mqtt" in options and options["mqtt"] in [True, "on", 1]:
             if "host" in options:
                 #All parameters shouuld be there I think
-                params={"mqtt_enable": True }
+                params={"mqtt_enable": 1 }
                 for k,o in [("host","mqtt_host"),("user","mqtt_user"),
                             ("password","mqtt_pass")]:
                     if k in options:

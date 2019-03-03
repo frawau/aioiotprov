@@ -105,7 +105,7 @@ class Shelly(object):
                 else:
                      params["mqtt_host"]+=":1883"
                 async with aioh.ClientSession(auth=self.myauth) as session:
-                    async with session.request("get","http://192.168.33.1/settings",params={"mqtt":params}) as resp:
+                    async with session.request("get","http://192.168.33.1/settings/mqtt",params=params) as resp:
                         logging.debug(resp.url)
                         logging.debug("Shelly: Response status was {}".format(resp.status))
                         if resp.status != 200:

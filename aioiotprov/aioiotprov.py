@@ -84,12 +84,12 @@ def parse_ifaces(content):
 
 
 class WiFiManager(object):
-    
+
     def __init__(self):
         pass
-    
+
 class WPAWiFiManager(WiFiManager):
-    
+
     def parse_cells(self, content):
         """This function parses the output of the command "/sbin/wpa_cli  scan_result"
 
@@ -138,9 +138,9 @@ class WPAWiFiManager(WiFiManager):
 
         logging.debug ("--> {}".format(locells))
         return locells
-    
+
     async def gather_cellinfo(self, interfaces):
-        
+
         cells = {}
         for iface in interfaces:
             iswifi = await run_cmd(["sudo", "/sbin/wpa_cli","-i",iface,"scan"])
@@ -148,7 +148,7 @@ class WPAWiFiManager(WiFiManager):
                 await aio.sleep(4)
                 cells[iface] = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", iface, "scan_result"], self.parse_cells)
         return cells
-    
+
     async def wifi_connect(self, iface, ssid, psk=None,is_wep=False):
         """Connect to the given wifi network.
 
@@ -222,12 +222,12 @@ class WPAWiFiManager(WiFiManager):
         """
         xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", iface,"bss_flush"])
         xx = await run_cmd(["sudo", "/sbin/wpa_cli", "-i", iface,"reconfigure"])
-        
-      
+
+
 class NMWiFiManager(WiFiManager):
-    
+
     def parse_cells(self, content):
-        """This function parses the output of the command "nmcli -t -f ssid,security -c no device wifi list"
+        """This function parses the output of the command "nmcli -t -f ssid,security,bssid -c no device wifi list"
 
         This function returns the parsed content as a list of dictionary.
         Each dictionary describes one scanned cell: ESSID,
@@ -244,12 +244,13 @@ class NMWiFiManager(WiFiManager):
         for line in lines:
             if not line:
                 continue
-            thisline = [x for x in line.split(":") if x.strip()]
+            thisline = [x for x in line.split(":")]
             if len(thisline) == 0 or thisline[0] in ["--",""]:
                 continue
             try:
                 acell={}
                 acell["ssid"]=thisline[0]
+                acell["bssid"]=":".join(thisline[2:]).replace("\\","")
                 if len(thisline) > 1:
                     if "WPA2" in thisline[1]:
                         acell["encryption"]="wpa2"
@@ -269,18 +270,18 @@ class NMWiFiManager(WiFiManager):
 
         logging.debug ("--> {}".format(locells))
         return locells
-    
+
     async def gather_cellinfo(self, interfaces):
-        
+
         cells = {}
         iswifi = await run_cmd(["sudo", "/usr/bin/nmcli", "device", "wifi", "rescan"])
         #TDO check returned values
         await aio.sleep(4)
-        allcells = await run_cmd(["sudo", "/usr/bin/nmcli", "-t", "-f", "ssid,security", "-c", "no", "device", "wifi", "list"], self.parse_cells)
+        allcells = await run_cmd(["sudo", "/usr/bin/nmcli", "-t", "-f", "ssid,security,bssid", "-c", "no", "device", "wifi", "list"], self.parse_cells)
         for iface in interfaces:
             cells[iface]=allcells
         return cells
-    
+
     async def wifi_connect(self, iface, ssid, psk=None,is_wep=False):
         """Connect to the given wifi network.
 
@@ -294,7 +295,7 @@ class NMWiFiManager(WiFiManager):
         """
         con = await run_cmd(["sudo", "nmcli", "device", "wifi", "connect", ssid, "password", psk, "ifname", iface])
         return None
-    
+
     async def wifi_disconnect(self, iface, netid):
         """Connect to the given wifi network.
 
@@ -306,7 +307,7 @@ class NMWiFiManager(WiFiManager):
         """
         logging.debug("Disconnecting {}".format(iface))
         con = await run_cmd(["sudo", "mcli", "device", "disconnect", iface])
-    
+
     async def wifi_reset(self, iface):
         """Connect to the given wifi network.
 
@@ -315,7 +316,7 @@ class NMWiFiManager(WiFiManager):
 
         """
         pass
-    
+
 async def run_cmd(cmd,parse=None):
     """This coroutine runs a shell command within the asyncio framework
 
@@ -466,7 +467,7 @@ class IoTProvision(object):
             self.interfaces = await run_cmd(["sudo", "/sbin/ip", "addr", "show", "dev", iface], parse_ifaces)
         else:
             self.interfaces = await run_cmd(["sudo", "/sbin/ip", "addr"], parse_ifaces)
-    
+
         if cells_too:
             self.cells = await self.wifimanager.gather_cellinfo(self.interfaces)
         return self.interfaces
@@ -519,7 +520,7 @@ class IoTProvision(object):
 
         """
         return await self.wifimanager.wifi_connect(self.iface, ssid, psk, is_wep)
-        
+
     async def wifi_disconnect(self, netid):
         """Connect to the given wifi network.
 

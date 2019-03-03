@@ -28,7 +28,7 @@ import asyncio
 import aiohttp as aioh
 import logging
 
-DELAY=17
+DELAY=2
 
 class Shelly(object):
 
@@ -112,6 +112,10 @@ class Shelly(object):
                             logging.debug("Shelly: MQTT not configured")
                         else:
                             logging.debug("Shelly: MQTT configured")
+                        try:
+                            logging.debug("Shelly: Response was {}".format( await resp.text()))
+                        except:
+                            pass
                 await asyncio.sleep(DELAY)
             else:
                 logging.warning("Warning: host must be defined for MQTT to be enabled.")

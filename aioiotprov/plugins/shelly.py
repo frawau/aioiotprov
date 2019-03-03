@@ -74,12 +74,12 @@ class Shelly(object):
                     logging.debug(resp.url)
                     logging.debug("Shelly: Response status was {}".format(resp.status))
                     if resp.status != 200:
-                        self.mypassword = ""
+                        self.myauth = None
                     try:
                         logging.debug("Shelly: Response was {}".format( await resp.text()))
                     except:
                         pass
-                    logging.debug("Shelly: Password %sset"%((self.mypassword=="" and "not") or "" ))
+                    logging.debug("Shelly: Password %sset"%((self.myauth is None and "not") or "" ))
             await asyncio.sleep(DELAY)
         else:
             await asyncio.sleep(0)
@@ -142,19 +142,12 @@ class Shelly(object):
         resu={}
         try:
             params = {"enabled":1, "ssid": ssid, "key": psk, "ipv4_method":"dhcp"}
-            if self.mypassword:
-                auth = aioh.BasicAuth(login="admin", password=self.mypassword)
-                async with aioh.ClientSession(auth=auth) as session:
-                    async with session.request("get","http://192.168.33.1/settings/sta",params=params) as resp:
-                        logging.debug(resp.url)
-                        logging.debug("Shelly: Response status was {}".format(resp.status))
-            else:
-                async with aioh.ClientSession() as session:
-                    async with session.request("get","http://192.168.33.1/settings/sta",params=params) as resp:
-                        logging.debug(resp.url)
-                        logging.debug("Shelly: Response status was {}".format(resp.status))
-                        if resp.status != 200:
-                            raise Exception()
+            async with aioh.ClientSession(auth=self.myauth) as session:
+                async with session.request("get","http://192.168.33.1/settings/sta",params=params) as resp:
+                    logging.debug(resp.url)
+                    logging.debug("Shelly: Response status was {}".format(resp.status))
+                    if resp.status != 200:
+                        raise Exception()
             logging.debug("Shelly: Set SSID and key")
             resu[self.mac] = {"type":"Shelly"}
         except:

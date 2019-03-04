@@ -14,7 +14,10 @@ I hope to add soon: Lifx, Tuya
 
 # Installation
 
-Later
+We are on PyPi so
+
+    pip3 aioiotprov
+
 
 # Running
 
@@ -33,3 +36,8 @@ For Shellies,
     -o "shelly:mqtt=on,user=mqttuser,password=mqttpass,host=somehost,port=1883"
 
 Setting option will only works with plugins that can handle those.
+
+# How it workd
+
+Mostly each plugin knows what SSID to llok for. If one of the needed SSID is found, aioiotprov will connect
+to the SSID and hand over provisioning duties to the plugin.

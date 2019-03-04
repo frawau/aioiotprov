@@ -37,7 +37,7 @@ For Shellies,
 
 Setting option will only works with plugins that can handle those.
 
-# How it workd
+# How it works
 
 Mostly each plugin knows what SSID to llok for. If one of the needed SSID is found, aioiotprov will connect
 to the SSID and hand over provisioning duties to the plugin.

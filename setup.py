@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-from distutils.core import setup
-
+import setuptools
 version = '0.0.1'
 
-setup(name='aioiotprov',
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
+setuptools.setup(name='aioiotprov',
     packages=['aioiotprov','aioiotprov.plugins'],
+    #packages=setuptools.find_packages(),
     version=version,
     author='François Wautier',
     author_email='francois@wautier.eu',
-    description='Library/utility to help provision various IoT devices. ',
+    description='Library/utility to help provision various IoT devices.',
+    long_description=long_description,
     url='http://github.com/frawau/aioiotprov',
-    download_url='https://github.com/frawau/aioiotprov/archive/'+version+'.tar.gz',
     keywords = ['IoT', 'provisioning', 'automation'],
     license='MIT',
     install_requires=[
@@ -26,4 +29,5 @@ setup(name='aioiotprov',
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5'
-    ])
+    ],
+    zip_safe=False)

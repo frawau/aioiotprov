@@ -16,7 +16,7 @@ I hope to add soon: Lifx, Tuya
 
 We are on PyPi so
 
-    pip3 aioiotprov
+    pip3 install aioiotprov
 
 
 # Running

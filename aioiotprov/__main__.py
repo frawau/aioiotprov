@@ -64,9 +64,9 @@ parser.add_argument("-p","--password", default='',
 parser.add_argument("-o","--options", dest="options", default={}, action=OptionString, nargs="*", metavar="<plugin>:opt1=val1, opt2=val2,..",
                     help="Option to be passed to plugins.")
 parser.add_argument("-w","--wpa", default=False, action="store_true",
-                    help="Use wpa_cli to control WiFi.")
+                    help="Use wpa_cli to control WiFi if command not found.")
 parser.add_argument("-n","--nm", default=False, action="store_true",
-                    help="Use nmcli to control WiFi.")
+                    help="Use nmcli to control WiFi if command not found.")
 parser.add_argument("-v","--verbose", default=False, action="store_true",
                     help="Print more information.")
 parser.add_argument("-j","--json", default=False, action="store_true",
@@ -75,14 +75,15 @@ parser.add_argument("-l","--list", default=False, action="store_true",
                     help="Just list the available SSID.")
 parser.add_argument("-d","--debug", default=False, action="store_true",
                     help="Print debug information.")
-if opts.wpa:
-    wifictl = aiop.WPAWiFiManager()
-elif opts.nm:
-    wifictl = aiop.NMWiFiManager()
-elif shutil.which('nmcli'):
+
+if shutil.which('nmcli'):
     wifictl = aiop.NMWiFiManager()
 elif shutil.which('wpa_cli'):
     wifictl = aiop.WPAWiFiManager()
+elif opts.wpa:
+    wifictl = aiop.WPAWiFiManager()
+elif opts.nm:
+    wifictl = aiop.NMWiFiManager()
 else:
     print("Error: Do not know how to managge WiFi interfaces. Neither 'nmcli' nor 'wpa_cli' are present.")
     sys.exit(1)

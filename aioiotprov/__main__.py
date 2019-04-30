@@ -76,6 +76,12 @@ parser.add_argument("-l","--list", default=False, action="store_true",
 parser.add_argument("-d","--debug", default=False, action="store_true",
                     help="Print debug information.")
 
+try:
+    opts = parser.parse_args()
+except Exception as e:
+    parser.error("Error: " + str(e))
+    sys.exit(1)
+
 if shutil.which('nmcli'):
     wifictl = aiop.NMWiFiManager()
 elif shutil.which('wpa_cli'):
@@ -86,12 +92,6 @@ elif opts.nm:
     wifictl = aiop.NMWiFiManager()
 else:
     print("Error: Do not know how to managge WiFi interfaces. Neither 'nmcli' nor 'wpa_cli' are present.")
-    sys.exit(1)
-
-try:
-    opts = parser.parse_args()
-except Exception as e:
-    parser.error("Error: " + str(e))
     sys.exit(1)
 
 if opts.debug:

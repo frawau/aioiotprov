@@ -63,6 +63,10 @@ parser.add_argument("-p","--password", default='',
                     help="The password that will control access to the device.")
 parser.add_argument("-o","--options", dest="options", default={}, action=OptionString, nargs="*", metavar="<plugin>:opt1=val1, opt2=val2,..",
                     help="Option to be passed to plugins.")
+parser.add_argument("-w","--wpa", default=False, action="store_true",
+                    help="Use wpa_cli to control WiFi.")
+parser.add_argument("-n","--nm", default=False, action="store_true",
+                    help="Use nmcli to control WiFi.")
 parser.add_argument("-v","--verbose", default=False, action="store_true",
                     help="Print more information.")
 parser.add_argument("-j","--json", default=False, action="store_true",
@@ -71,8 +75,11 @@ parser.add_argument("-l","--list", default=False, action="store_true",
                     help="Just list the available SSID.")
 parser.add_argument("-d","--debug", default=False, action="store_true",
                     help="Print debug information.")
-
-if shutil.which('nmcli'):
+if opts.wpa:
+    wifictl = aiop.WPAWiFiManager()
+elif opts.nm:
+    wifictl = aiop.NMWiFiManager()
+elif shutil.which('nmcli'):
     wifictl = aiop.NMWiFiManager()
 elif shutil.which('wpa_cli'):
     wifictl = aiop.WPAWiFiManager()

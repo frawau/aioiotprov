@@ -99,16 +99,28 @@ class Etrix(object):
         try:
             params = {"s":ssid,"p":psk}
             async with aioh.ClientSession() as session:
+                async with session.request("get","http://192.168.4.1/i") as resp:
+                    logging.debug(resp.url)
+                    txt = await resp.text()
+                    ivals = txt.split("<dl>")[1]
+                    ivals = ivals.split("</dl>")[0]
+                    ivals = ivals.replace("<dt>","")
+                    for x in ivals.split("</dd>"):
+                        if x:
+                            k,v = x.split("</dt><dd>")
+                            resu[k.lower()] = v.lower()
+                    
+            async with aioh.ClientSession() as session:
                 async with session.request("get","http://192.168.4.1/wifisave",params=params) as resp:
                     logging.debug(resp.url)
                     logging.debug("e-Trix: Response status was {}".format(resp.status))
                     if resp.status == 200:
-                        resu[self.mac]={"type":"e-trix"}
+                        resu["type"] = "e-trix"
             logging.debug("e-Trix: Set SSID and key")
         except:
             logging.debug("e-Trix: Could not set SSID")
         await asyncio.sleep(2)
         self.go_on = False
-        return resu
+        return { self.mac: resu }
 
 PluginObject=Etrix

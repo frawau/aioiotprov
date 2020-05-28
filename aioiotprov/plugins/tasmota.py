@@ -28,11 +28,12 @@ import asyncio
 import aiohttp as aioh
 import logging
 
-DELAY=17
+#DELAY=17
+DELAY=5
 
-class Sonoff(object):
+class Tasmota(object):
 
-    name = "sonoff"
+    name = "tasmota"
 
     def __init__(self,mac):
         """
@@ -59,7 +60,7 @@ class Sonoff(object):
         """
         resu = {}
         for x in cells:
-            if x.lower().strip().startswith("tasmota-"):
+            if x.lower().strip().startswith("tasmota_"):
                 resu[x]={"passwd":"", "ip":"", "ipv6":""}
 
         return resu
@@ -67,19 +68,19 @@ class Sonoff(object):
     async def secure(self,user,passwd):
         """ Setting the password... and remembering it for subsequent access """
         if passwd:
-            params={"w":"5,1","p1":passwd,"a1":"sonoff-%s"%self.myid,"b2":0}
+            params={"wp":passwd,"a0":"tasmota-%s"%self.myid,"b2":0,"save":""}
             self.myauth = aioh.BasicAuth(login="admin", password=passwd)
             async with aioh.ClientSession(auth=self.myauth) as session:
-                async with session.request("get","http://192.168.4.1/sv",params=params) as resp:
+                async with session.request("get","http://192.168.4.1/co",params=params) as resp:
                     logging.debug(resp.url)
-                    logging.debug("Sonoff: Response status was {}".format(resp.status))
+                    logging.debug("Tasmota: Response status was {}".format(resp.status))
                     if resp.status != 200:
                         self.myauth = None
                     try:
-                        logging.debug("Sonoff: Response was {}".format( await resp.text()))
+                        logging.debug("Tasmota: Response was {}".format( await resp.text()))
                     except:
                         pass
-                    logging.debug("Sonoff: Password %sset"%((self.myauth is None and "not") or "" ))
+                    logging.debug("Tasmota: Password %sset"%((self.myauth is None and "not") or "" ))
             await asyncio.sleep(DELAY)
         else:
             await asyncio.sleep(0)
@@ -92,33 +93,52 @@ class Sonoff(object):
 
         """
         logging.debug("options --> {}".format(options))
+        params = {}
+        if "template" in options:
+            params["t1"] = options["template"]
+            params["t2"] = 'on'
+            
         if "mqtt" in options:
             if options["mqtt"] in [True, "on", 1]:
-                params={"w":"5,1","b1":"on","a1":"Sonoff-%s"%self.myid}
+                params["b1"] = 'on'
+                params["a0"] = "Tasmota_1-%s"%self.myid
+                params["a1"] = "Tasmota_2-%s"%self.myid
+                params["a2"] = "Tasmota_3-%s"%self.myid
+                params["a3"] = "Tasmota_4-%s"%self.myid
             else:
-                params={"w":"5,1","a1":"Sonoff-%s"%self.myid}
+                params["b1"] = 0
+        if params:
+            params["wp"] = "****"
+            params["save"] = ""
             #Set MQTT
             async with aioh.ClientSession(auth=self.myauth) as session:
-                async with session.request("get","http://192.168.4.1/sv",params=params) as resp:
+                async with session.request("get","http://192.168.4.1/co",params=params) as resp:
                     logging.debug(resp.url)
-                    logging.debug("Sonoff: Response status was {}".format(resp.status))
+                    logging.debug("Tasmota: Response status was {}".format(resp.status))
             await asyncio.sleep(DELAY)
 
-            if options["mqtt"] in [True, "on", 1]:
+            if "mqtt" in options and options["mqtt"] in [True, "on", 1]:
+                #if "port" not in options:
+                    #options["port"]=1883
+                #if "topic" in options and "full topic" not in options:
+                    #options["full topic"] = "%prefix%/"+options["topic"]+"/"
+                #if "client" not in options:
+                    #options["client"]="DVES_%06X"
                 #All parameters shouuld be there I think
-                params={"w":"2,1"}
+                params={}
                 for k,o in [("host","mh"),("port","ml"),("client","mc"),("user","mu"),
                             ("password","mp"),("topic","mt"),("full topic","mf")]:
                     if k in options:
                         params[o]=options[k] #Set MQTT
+                params["save"] = ""
                 async with aioh.ClientSession(auth=self.myauth) as session:
-                    async with session.request("get","http://192.168.4.1/sv",params=params) as resp:
+                    async with session.request("get","http://192.168.4.1/mq",params=params) as resp:
                         logging.debug(resp.url)
-                        logging.debug("Sonoff: Response status was {}".format(resp.status))
+                        logging.debug("Tasmota: Response status was {}".format(resp.status))
                         if resp.status != 200:
-                            logging.debug("Sonoff: MQTT not configured")
+                            logging.debug("Tasmota: MQTT not configured")
                         else:
-                            logging.debug("Sonoff: MQTT configured")
+                            logging.debug("Tasmota: MQTT configured")
                 await asyncio.sleep(DELAY)
         else:
             await asyncio.sleep(0)
@@ -145,18 +165,18 @@ class Sonoff(object):
         """
         resu={}
         try:
-            params = {"w":"1,1","s1":ssid,"p1":psk,"s2":ssid, "p2":psk,"h":"%s-%04d"}
+            params = {"s1":ssid,"p1":psk,"s2":ssid, "p2":psk,"h":"%s-%04d","c":"","save":""}
             async with aioh.ClientSession(auth=self.myauth) as session:
-                async with session.request("get","http://192.168.4.1/sv",params=params) as resp:
+                async with session.request("get","http://192.168.4.1/wi",params=params) as resp:
                     logging.debug(resp.url)
-                    logging.debug("Sonoff: Response status was {}".format(resp.status))
+                    logging.debug("Tasmota: Response status was {}".format(resp.status))
 
-            logging.debug("Sonoff: Set SSID and key")
-            resu[self.mac] = {"type":"Sonoff"}
+            logging.debug("Tasmota: Set SSID and key")
+            resu[self.mac] = {"type":"Tasmota"}
         except:
-            logging.debug("Sonoff: Could not set SSID")
+            logging.debug("Tasmota: Could not set SSID")
         await asyncio.sleep(2)
         self.go_on = False
         return resu
 
-PluginObject=Sonoff
+PluginObject=Tasmota

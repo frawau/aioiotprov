@@ -58,7 +58,7 @@ class Broadlink(object):
         """
         resu = {}
         for x in cells:
-            if x.lower().strip().startswith("broadlinkprov"):
+            if x.lower().strip().startswith("broadlink"):
                 resu[x]={"passwd":"", "ip":"", "ipv6":""}
 
         return resu

@@ -40,13 +40,13 @@ class OptionString(argparse.Action):
             for aval in values:
                 key = aval.split(":")[0].strip()
                 allvals ={}
-                lovals=(":".join(aval.split(":")[1:])).split(",")
+                lovals=(":".join(aval.split("::")[1:])).split("||")
                 for aval in lovals:
-                    vkey = (aval.split("="))[0].strip()
-                    allvals[vkey] = (aval.split("="))[1].strip()
+                    vkey = (aval.split("=="))[0].strip()
+                    allvals[vkey] = (aval.split("=="))[1].strip()
                 options[key]=allvals
         except:
-            raise argparse.ArgumentTypeError("Could not parse options \"{}\"".format(aval))
+            raise argparse.ArgumentTypeError("Could not parse options \"{}\". You might want to add -- to end the options.".format(aval))
         setattr(namespace, self.dest, options)
 
 
@@ -61,7 +61,7 @@ parser.add_argument("-u","--user", default='',
                     help="The user that will control access to the device")
 parser.add_argument("-p","--password", default='',
                     help="The password that will control access to the device.")
-parser.add_argument("-o","--options", dest="options", default={}, action=OptionString, nargs="*", metavar="<plugin>:opt1=val1, opt2=val2,..",
+parser.add_argument("-o","--options", dest="options", default={}, action=OptionString, nargs="*", metavar="<plugin>::opt1==val1||opt2==val2||..",
                     help="Option to be passed to plugins.")
 parser.add_argument("-w","--wpa", default=False, action="store_true",
                     help="Use wpa_cli to control WiFi if command not found.")

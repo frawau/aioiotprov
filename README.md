@@ -14,7 +14,6 @@ Linux, and then again not all. It is working on a RaspberryPi running Debian Str
 
 When using nmcli, it is possible to use a connected WiFi adapter, this has not yet been tested with wpa_cli
 
-I hope to add soon: Lifx, Tuya
 
 # Installation
 
@@ -62,7 +61,7 @@ This is a plugin to provision [E-Trix](https://creativepowerthai.com/intro/) ele
 
 The device cannot be secured (no user/password setting) nor is any option available for this plugin.
 
-### Shelly
+### shelly
 
 This is a plugin to provision [Shelly](https://shelly.cloud/) devices.
 
@@ -95,7 +94,8 @@ The plugin supports the following options:
         topic: define the device unique id for MQTT
         full topic: : full topic e.g. mystuff/%prefix%/%topic%
 
-    For 'client', 'topic' and 'full topic'  the string '{mac}' in the value will be replaced by the last 6 hexadigits of the MAC address in lowercase format.
+    For 'client', 'topic' and 'full topic'  the string '{mac}' in the value will be replaced by
+    the last 6 hexadigits of the MAC address in lowercase format.
 
 ### tp-link
 

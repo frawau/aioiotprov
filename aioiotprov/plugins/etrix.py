@@ -28,24 +28,25 @@ import asyncio
 import aiohttp as aioh
 import logging
 
-DELAY=17
+DELAY = 17
+
 
 class Etrix(object):
 
     name = "e-trix"
 
-    def __init__(self,mac):
+    def __init__(self, mac):
         """
         The go_on attribute must exist. It is set to False when provisioning is done
 
         :param mac: MAC address of the device being provisioned
         :type mac: str
         """
-        self.go_on=True
+        self.go_on = True
         self.mac = mac
 
     @classmethod
-    def can_handle(self,cells):
+    def can_handle(self, cells):
         """ Given a list of cell names, return a list of those it can handle
 
         :param cells: A list of cell names
@@ -58,15 +59,15 @@ class Etrix(object):
         resu = {}
         for x in cells:
             if x.lower().strip().startswith("e-trix"):
-                resu[x]={"passwd":"", "ip":"", "ipv6":""}
+                resu[x] = {"passwd": "", "ip": "", "ipv6": ""}
 
         return resu
 
-    async def secure(self,user,passwd):
+    async def secure(self, user, passwd):
         """ Setting the password... and remembering it for subsequent access """
         await asyncio.sleep(0)
 
-    async def set_options(self,options={}):
+    async def set_options(self, options={}):
         """ Could set MQTT here
 
         :param options: A list of options to be set. Here MQTT setting is possible
@@ -97,21 +98,23 @@ class Etrix(object):
         """
         resu = {}
         try:
-            params = {"s":ssid,"p":psk}
+            params = {"s": ssid, "p": psk}
             async with aioh.ClientSession() as session:
-                async with session.request("get","http://192.168.4.1/i") as resp:
+                async with session.request("get", "http://192.168.4.1/i") as resp:
                     logging.debug(resp.url)
                     txt = await resp.text()
                     ivals = txt.split("<dl>")[1]
                     ivals = ivals.split("</dl>")[0]
-                    ivals = ivals.replace("<dt>","")
+                    ivals = ivals.replace("<dt>", "")
                     for x in ivals.split("</dd>"):
                         if x:
-                            k,v = x.split("</dt><dd>")
+                            k, v = x.split("</dt><dd>")
                             resu[k.lower()] = v.lower()
-                    
+
             async with aioh.ClientSession() as session:
-                async with session.request("get","http://192.168.4.1/wifisave",params=params) as resp:
+                async with session.request(
+                    "get", "http://192.168.4.1/wifisave", params=params
+                ) as resp:
                     logging.debug(resp.url)
                     logging.debug("e-Trix: Response status was {}".format(resp.status))
                     if resp.status == 200:
@@ -121,6 +124,7 @@ class Etrix(object):
             logging.debug("e-Trix: Could not set SSID")
         await asyncio.sleep(2)
         self.go_on = False
-        return { self.mac: resu }
+        return {self.mac: resu}
 
-PluginObject=Etrix
+
+PluginObject = Etrix

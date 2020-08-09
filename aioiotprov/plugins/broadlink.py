@@ -30,23 +30,22 @@ from struct import pack
 import logging, socket
 
 
-
 class Broadlink(object):
 
     name = "broadlink"
 
-    def __init__(self,mac):
+    def __init__(self, mac):
         """
         The go_on attribute must exist. It is set to False when provisioning is done
 
         :param mac: MAC address of the device being provisioned
         :type mac: str
         """
-        self.go_on=True
+        self.go_on = True
         self.mac = mac
 
     @classmethod
-    def can_handle(self,cells):
+    def can_handle(self, cells):
         """ Given a list of cell names, return a list of those it can handle
 
         :param cells: A list of cell names
@@ -59,20 +58,19 @@ class Broadlink(object):
         resu = {}
         for x in cells:
             if x.lower().strip().startswith("broadlink"):
-                resu[x]={"passwd":"", "ip":"", "ipv6":""}
+                resu[x] = {"passwd": "", "ip": "", "ipv6": ""}
 
         return resu
 
-    async def secure(self,user,passwd):
+    async def secure(self, user, passwd):
         """ Nothing here """
         await asyncio.sleep(0)
 
-    async def set_options(self,options={}):
+    async def set_options(self, options={}):
         """ Nothing here """
         await asyncio.sleep(0)
 
-
-    def build_message(self,ssid,psk,ktype):
+    def build_message(self, ssid, psk, ktype):
         """Build the provisioning payload
 
             :param ssid: The cell the device should connect to
@@ -101,14 +99,16 @@ class Broadlink(object):
         #
         payload[0x84] = ssid_length  # Character length of SSID
         payload[0x85] = pass_length  # Character length of password
-        payload[0x86] = ["none","wep","wpa","wpa2"].index(ktype)  # Type of encryption (00=none,01=WEP,02=WPA1,03=WPA2,04=WPA1/2)
+        payload[0x86] = ["none", "wep", "wpa", "wpa2"].index(
+            ktype
+        )  # Type of encryption (00=none,01=WEP,02=WPA1,03=WPA2,04=WPA1/2)
         #
-        checksum = 0xbeaf
+        checksum = 0xBEAF
         for i in range(len(payload)):
             checksum += payload[i]
-            checksum = checksum & 0xffff
+            checksum = checksum & 0xFFFF
         #
-        payload[0x20] = checksum & 0xff  # Checksum 1 position
+        payload[0x20] = checksum & 0xFF  # Checksum 1 position
         payload[0x21] = checksum >> 8  # Checksum 2 position
 
         return payload
@@ -135,8 +135,7 @@ class Broadlink(object):
         """
 
         class BroadlinktProtocol:
-
-            def __init__(self, payload,ip):
+            def __init__(self, payload, ip):
                 self.payload = payload
                 self.ip = ip
 
@@ -148,21 +147,25 @@ class Broadlink(object):
                 self.broadcast()
 
             def datagram_received(self, data, addr):
-                logging.debug('data received: {}, {}'.format(data, addr))
+                logging.debug("data received: {}, {}".format(data, addr))
 
             def broadcast(self):
-                self.transport.sendto(payload, (".".join(self.ip.split(".")[:-1]+['255']), 80))
+                self.transport.sendto(
+                    payload, (".".join(self.ip.split(".")[:-1] + ["255"]), 80)
+                )
 
-        payload = self.build_message(ssid,psk,ktype)
+        payload = self.build_message(ssid, psk, ktype)
         try:
-            loop=asyncio.get_running_loop()
+            loop = asyncio.get_running_loop()
         except:
-            loop=asyncio.get_event_loop()
+            loop = asyncio.get_event_loop()
         coro = loop.create_datagram_endpoint(
-                lambda: BroadlinktProtocol(payload,ip), local_addr=('0.0.0.0', 8080))
+            lambda: BroadlinktProtocol(payload, ip), local_addr=("0.0.0.0", 8080)
+        )
         xx = await coro
         await asyncio.sleep(3)
         self.go_on = False
-        return {self.mac:{"type":"broadlink"}}
+        return {self.mac: {"type": "broadlink"}}
 
-PluginObject=Broadlink
+
+PluginObject = Broadlink

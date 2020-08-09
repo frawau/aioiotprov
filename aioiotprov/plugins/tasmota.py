@@ -27,28 +27,31 @@
 import asyncio
 import aiohttp as aioh
 import logging
+import urllib
 
-#DELAY=17
-DELAY=5
+# DELAY=17
+DELAY = 5
+
 
 class Tasmota(object):
 
     name = "tasmota"
 
-    def __init__(self,mac):
+    def __init__(self, mac):
         """
         The go_on attribute must exist. It is set to False when provisioning is done
 
         :param mac: MAC address of the device being provisioned
         :type mac: str
         """
-        self.go_on=True
+        self.go_on = True
         self.myid = "".join(mac.split(":")[-3:]).upper()
         self.myauth = None
         self.mac = mac
+        self.options = {}
 
     @classmethod
-    def can_handle(self,cells):
+    def can_handle(self, cells):
         """ Given a list of cell names, return a list of those it can handle
 
         :param cells: A list of cell names
@@ -61,31 +64,21 @@ class Tasmota(object):
         resu = {}
         for x in cells:
             if x.lower().strip().startswith("tasmota_"):
-                resu[x]={"passwd":"", "ip":"", "ipv6":""}
+                resu[x] = {"passwd": "", "ip": "", "ipv6": ""}
 
         return resu
 
-    async def secure(self,user,passwd):
-        """ Setting the password... and remembering it for subsequent access """
+    async def secure(self, user, passwd):
+        """ Setting the password... and remembering it for subsequent access
+        With tasmota, we use the backlog command, to set everything at onece, so here we setup
+        the options attribute
+        """
         if passwd:
-            params={"wp":passwd,"a0":"tasmota-%s"%self.myid,"b2":0,"save":""}
-            self.myauth = aioh.BasicAuth(login="admin", password=passwd)
-            async with aioh.ClientSession(auth=self.myauth) as session:
-                async with session.request("get","http://192.168.4.1/co",params=params) as resp:
-                    logging.debug(resp.url)
-                    logging.debug("Tasmota: Response status was {}".format(resp.status))
-                    if resp.status != 200:
-                        self.myauth = None
-                    try:
-                        logging.debug("Tasmota: Response was {}".format( await resp.text()))
-                    except:
-                        pass
-                    logging.debug("Tasmota: Password %sset"%((self.myauth is None and "not") or "" ))
-            await asyncio.sleep(DELAY)
-        else:
-            await asyncio.sleep(0)
+            self.myauth = aioh.BasicAuth(login=user, password=passwd)
+            self.options["WebPassword"] = passwd
+        await asyncio.sleep(0)
 
-    async def set_options(self,options={}):
+    async def set_options(self, options={}):
         """ Could set MQTT here
 
         :param options: A list of options to be set. Here MQTT setting is possible
@@ -93,55 +86,37 @@ class Tasmota(object):
 
         """
         logging.debug("options --> {}".format(options))
-        params = {}
+        # params = {}
         if "template" in options:
-            params["t1"] = options["template"]
-            params["t2"] = 'on'
-            
+            self.options["Template"] = options["template"]
+            self.options["Module"] = 0
+            # params["t1"] = options["template"]
+            # params["t2"] = 'on'
+        elif "module" in options:
+            self.options["Module"] = options["module"]
+
         if "mqtt" in options:
             if options["mqtt"] in [True, "on", 1]:
-                params["b1"] = 'on'
-                params["a0"] = "Tasmota_1-%s"%self.myid
-                params["a1"] = "Tasmota_2-%s"%self.myid
-                params["a2"] = "Tasmota_3-%s"%self.myid
-                params["a3"] = "Tasmota_4-%s"%self.myid
-            else:
-                params["b1"] = 0
-        if params:
-            params["wp"] = "****"
-            params["save"] = ""
-            #Set MQTT
-            async with aioh.ClientSession(auth=self.myauth) as session:
-                async with session.request("get","http://192.168.4.1/co",params=params) as resp:
-                    logging.debug(resp.url)
-                    logging.debug("Tasmota: Response status was {}".format(resp.status))
-            await asyncio.sleep(DELAY)
-
-            if "mqtt" in options and options["mqtt"] in [True, "on", 1]:
-                #if "port" not in options:
-                    #options["port"]=1883
-                #if "topic" in options and "full topic" not in options:
-                    #options["full topic"] = "%prefix%/"+options["topic"]+"/"
-                #if "client" not in options:
-                    #options["client"]="DVES_%06X"
-                #All parameters shouuld be there I think
-                params={}
-                for k,o in [("host","mh"),("port","ml"),("client","mc"),("user","mu"),
-                            ("password","mp"),("topic","mt"),("full topic","mf")]:
+                self.options["SetOption3"] = 1
+                for k, o in [
+                    ("host", "MqttHost"),
+                    ("port", "MqttPort"),
+                    ("user", "MqttUser"),
+                    ("password", "Mqttpassword"),
+                ]:
                     if k in options:
-                        params[o]=options[k] #Set MQTT
-                params["save"] = ""
-                async with aioh.ClientSession(auth=self.myauth) as session:
-                    async with session.request("get","http://192.168.4.1/mq",params=params) as resp:
-                        logging.debug(resp.url)
-                        logging.debug("Tasmota: Response status was {}".format(resp.status))
-                        if resp.status != 200:
-                            logging.debug("Tasmota: MQTT not configured")
-                        else:
-                            logging.debug("Tasmota: MQTT configured")
-                await asyncio.sleep(DELAY)
-        else:
-            await asyncio.sleep(0)
+                        self.options[o] = options[k]  # Set MQTT
+
+                for k, o in [
+                    ("client", "MqttClient"),
+                    ("topic", "Topic"),
+                    ("full topic", "FullTopic"),
+                ]:
+                    if k in options:
+                        self.options[o] = options[k].replace(
+                            "{mac}", "".join(self.mac.split(":")[-3:]).lower()
+                        )  # Set MQTT
+        await asyncio.sleep(0)
 
     async def provision(self, ip, ssid, psk, ktype="none"):
         """Coroutine to perform provisioning
@@ -163,20 +138,49 @@ class Tasmota(object):
             :returns: a dictionary of information or AGAIN if needed
             :rtype: list
         """
-        resu={}
+        resu = {}
         try:
-            params = {"s1":ssid,"p1":psk,"s2":ssid, "p2":psk,"h":"%s-%04d","c":"","save":""}
+            self.options.update(
+                {
+                    "SSID": ssid,
+                    "PASSWORD1": psk,
+                    "SSID2": ssid,
+                    "PASSWORD2": psk,
+                    "HOSTNAME": "1",
+                }
+            )
+            param = {
+                "cmnd": "Backlog "
+                + ";".join([f"{x} {y}" for x, y in self.options.items()])
+            }
+            param = urllib.parse.urlencode(param, quote_via=urllib.parse.quote)
+            doitagin = False
             async with aioh.ClientSession(auth=self.myauth) as session:
-                async with session.request("get","http://192.168.4.1/wi",params=params) as resp:
+                async with session.request(
+                    "get", "http://192.168.4.1/cm", params=param
+                ) as resp:
                     logging.debug(resp.url)
                     logging.debug("Tasmota: Response status was {}".format(resp.status))
+                    if resp.status == 401:
+                        doitagin = True
+            if doitagin:
+                async with aioh.ClientSession(auth=None) as session:
+                    async with session.request(
+                        "get", "http://192.168.4.1/cm", params=param
+                    ) as resp:
+                        logging.debug(resp.url)
+                        logging.debug(
+                            "Tasmota: Response status was {}".format(resp.status)
+                        )
 
             logging.debug("Tasmota: Set SSID and key")
-            resu[self.mac] = {"type":"Tasmota"}
-        except:
-            logging.debug("Tasmota: Could not set SSID")
+            resu[self.mac] = {"type": "Tasmota"}
+        except Exception as e:
+            logging.debug(f"Tasmota: Could not set SSID: {e}")
+            logging.exception(e)
         await asyncio.sleep(2)
         self.go_on = False
         return resu
 
-PluginObject=Tasmota
+
+PluginObject = Tasmota

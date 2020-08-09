@@ -32,30 +32,30 @@ import json
 # Encryption and Decryption of TP-Link Smart Home Protocol
 # XOR Autokey Cipher with starting key = 171
 def encrypt(string):
-        key = 171
-        result = pack('>I', len(string))
-        for i in string:
-                a = key ^ ord(i)
-                key = a
-                result += bytes([a])
-        return result
+    key = 171
+    result = pack(">I", len(string))
+    for i in string:
+        a = key ^ ord(i)
+        key = a
+        result += bytes([a])
+    return result
+
 
 def decrypt(string):
-        key = 171
-        result = ""
-        for i in string:
-                a = key ^ i
-                key = i
-                result += chr(a)
-        return result
-
+    key = 171
+    result = ""
+    for i in string:
+        a = key ^ i
+        key = i
+        result += chr(a)
+    return result
 
 
 class TPLink(object):
 
     name = "tp-link"
 
-    def __init__(self,mac):
+    def __init__(self, mac):
         """
         The go_on attribute must exist. It is set to False when provisioning is done
 
@@ -63,11 +63,11 @@ class TPLink(object):
         :type mac: str
 
         """
-        self.go_on=True
+        self.go_on = True
         self.mac = mac
 
     @classmethod
-    def can_handle(self,cells):
+    def can_handle(self, cells):
         """ Given a list of cell names, return a list of those it can handle
 
         :param cells: A list of cell names
@@ -80,18 +80,17 @@ class TPLink(object):
         resu = {}
         for x in cells:
             if x.lower().strip().startswith("tp-link"):
-                resu[x]={"passwd":"", "ip":"", "ipv6":""}
+                resu[x] = {"passwd": "", "ip": "", "ipv6": ""}
 
         return resu
 
-    async def secure(self,user,passwd):
+    async def secure(self, user, passwd):
         """ Nothing here """
         await asyncio.sleep(0)
 
-    async def set_options(self,options={}):
+    async def set_options(self, options={}):
         """ Nothing here """
         await asyncio.sleep(0)
-
 
     async def provision(self, ip, ssid, psk, ktype="none"):
         """Coroutine to perform provisioning
@@ -114,26 +113,31 @@ class TPLink(object):
             :rtype: list
         """
         try:
-            reader, writer = await asyncio.open_connection(".".join(ip.split(".")[:-1]+["1"]), 9999)
+            reader, writer = await asyncio.open_connection(
+                ".".join(ip.split(".")[:-1] + ["1"]), 9999
+            )
         except:
             self.go_on = False
             return {}
-        message = """{"netif":{"set_stainfo":{"ssid":"%s","password":"%s","key_type":%d}}}"""
-        message = message%(ssid,psk,["none","wep","wpa","wpa2"].index(ktype))
-        logging.debug('TP-Link: Send: %r' % message)
+        message = (
+            """{"netif":{"set_stainfo":{"ssid":"%s","password":"%s","key_type":%d}}}"""
+        )
+        message = message % (ssid, psk, ["none", "wep", "wpa", "wpa2"].index(ktype))
+        logging.debug("TP-Link: Send: %r" % message)
         writer.write(encrypt(message))
         data = await reader.read(100)
         data = json.loads(decrypt(data[4:]))
-        logging.debug('Received: %r' % data)
+        logging.debug("Received: %r" % data)
         writer.close()
         self.go_on = False
         resu = {}
         try:
-            if data['netif']['set_stainfo']['err_code'] == 0:
-                resu[data['netif']['set_stainfo']['mac']] = {"type":"TP-Link"}
+            if data["netif"]["set_stainfo"]["err_code"] == 0:
+                resu[data["netif"]["set_stainfo"]["mac"]] = {"type": "TP-Link"}
         except:
             pass
         finally:
             return resu
 
-PluginObject=TPLink
+
+PluginObject = TPLink

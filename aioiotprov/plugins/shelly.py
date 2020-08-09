@@ -28,26 +28,27 @@ import asyncio
 import aiohttp as aioh
 import logging
 
-DELAY=2
+DELAY = 2
+
 
 class Shelly(object):
 
     name = "shelly"
 
-    def __init__(self,mac):
+    def __init__(self, mac):
         """
         The go_on attribute must exist. It is set to False when provisioning is done
 
         :param mac: MAC address of the device being provisioned
         :type mac: str
         """
-        self.go_on=True
+        self.go_on = True
         self.myid = "".join(mac.split(":")[-3:]).upper()
         self.myauth = None
         self.mac = mac
 
     @classmethod
-    def can_handle(self,cells):
+    def can_handle(self, cells):
         """ Given a list of cell names, return a list of those it can handle
 
         :param cells: A list of cell names
@@ -60,35 +61,48 @@ class Shelly(object):
         resu = {}
         for x in cells:
             if x.lower().strip().startswith("shelly"):
-                resu[x]={"passwd":"", "ip":"", "ipv6":""}
+                resu[x] = {"passwd": "", "ip": "", "ipv6": ""}
 
         return resu
 
-    async def secure(self,user,passwd):
+    async def secure(self, user, passwd):
         """ Setting the password... and remembering it for subsequent access """
         if passwd:
-            params={"enabled": 1, "username": user,"password":passwd}
+            params = {"enabled": 1, "username": user, "password": passwd}
             self.myauth = aioh.BasicAuth(login=user, password=passwd)
             try:
                 async with aioh.ClientSession(auth=self.myauth) as session:
-                    async with session.request("get","http://192.168.33.1/settings/login",params=params) as resp:
+                    async with session.request(
+                        "get", "http://192.168.33.1/settings/login", params=params
+                    ) as resp:
                         logging.debug(resp.url)
-                        logging.debug("Shelly: Response status was {}".format(resp.status))
+                        logging.debug(
+                            "Shelly: Response status was {}".format(resp.status)
+                        )
                         if resp.status != 200:
                             self.myauth = None
                         try:
-                            logging.debug("Shelly: Response was {}".format( await resp.text()))
+                            logging.debug(
+                                "Shelly: Response was {}".format(await resp.text())
+                            )
                         except:
                             pass
-                        logging.debug("Shelly: Password %sset"%((self.myauth is None and "not") or "" ))
+                        logging.debug(
+                            "Shelly: Password %sset"
+                            % ((self.myauth is None and "not") or "")
+                        )
                 await asyncio.sleep(DELAY)
             except Exception as e:
-                logging.debug("Shelly: Something really went wrong when setting user/password: {}".format(e))
+                logging.debug(
+                    "Shelly: Something really went wrong when setting user/password: {}".format(
+                        e
+                    )
+                )
                 await asyncio.sleep(0)
         else:
             await asyncio.sleep(0)
 
-    async def set_options(self,options={}):
+    async def set_options(self, options={}):
         """ Could set MQTT here
 
         :param options: A list of options to be set. Here MQTT setting is possible
@@ -96,28 +110,37 @@ class Shelly(object):
 
         """
         logging.debug("options --> {}".format(options))
-        if "mqtt" in options and options["mqtt"] in [True, "on", 1, '1']:
+        if "mqtt" in options and options["mqtt"] in [True, "on", 1, "1"]:
             if "host" in options:
-                #All parameters shouuld be there I think
-                params={"mqtt_enable": 1 }
-                for k,o in [("host","mqtt_server"),("user","mqtt_user"),
-                            ("password","mqtt_pass")]:
+                # All parameters shouuld be there I think
+                params = {"mqtt_enable": 1}
+                for k, o in [
+                    ("host", "mqtt_server"),
+                    ("user", "mqtt_user"),
+                    ("password", "mqtt_pass"),
+                ]:
                     if k in options:
-                        params[o]=options[k] #Set MQTT
+                        params[o] = options[k]  # Set MQTT
                 if "port" in options:
-                    params["mqtt_server"]+=":"+options["port"]
+                    params["mqtt_server"] += ":" + options["port"]
                 else:
-                     params["mqtt_server"]+=":1883"
+                    params["mqtt_server"] += ":1883"
                 async with aioh.ClientSession(auth=self.myauth) as session:
-                    async with session.request("post","http://192.168.33.1/settings",params=params) as resp:
+                    async with session.request(
+                        "post", "http://192.168.33.1/settings", params=params
+                    ) as resp:
                         logging.debug(resp.url)
-                        logging.debug("Shelly: Response status was {}".format(resp.status))
+                        logging.debug(
+                            "Shelly: Response status was {}".format(resp.status)
+                        )
                         if resp.status != 200:
                             logging.debug("Shelly: MQTT not configured")
                         else:
                             logging.debug("Shelly: MQTT configured")
                         try:
-                            logging.debug("Shelly: Response was {}".format( await resp.text()))
+                            logging.debug(
+                                "Shelly: Response was {}".format(await resp.text())
+                            )
                         except:
                             pass
                 await asyncio.sleep(DELAY)
@@ -147,21 +170,24 @@ class Shelly(object):
             :returns: a dictionary of information or AGAIN if needed
             :rtype: list
         """
-        resu={}
+        resu = {}
         try:
-            params = {"enabled":1, "ssid": ssid, "key": psk, "ipv4_method":"dhcp"}
+            params = {"enabled": 1, "ssid": ssid, "key": psk, "ipv4_method": "dhcp"}
             async with aioh.ClientSession(auth=self.myauth) as session:
-                async with session.request("get","http://192.168.33.1/settings/sta",params=params) as resp:
+                async with session.request(
+                    "get", "http://192.168.33.1/settings/sta", params=params
+                ) as resp:
                     logging.debug(resp.url)
                     logging.debug("Shelly: Response status was {}".format(resp.status))
                     if resp.status != 200:
                         raise Exception()
             logging.debug("Shelly: Set SSID and key")
-            resu[self.mac] = {"type":"Shelly"}
+            resu[self.mac] = {"type": "Shelly"}
         except:
             logging.debug("Shelly: Could not set SSID")
         await asyncio.sleep(2)
         self.go_on = False
         return resu
 
-PluginObject=Shelly
+
+PluginObject = Shelly

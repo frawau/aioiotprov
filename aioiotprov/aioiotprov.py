@@ -415,7 +415,7 @@ async def run_inter_cmd(cmd, icmd, parse=None):
         *cmd,
         stdin=aio.subprocess.PIPE,
         stdout=aio.subprocess.PIPE,
-        stderr=aio.subprocess.PIPE
+        stderr=aio.subprocess.PIPE,
     )
     for scmd in icmd:
         if isinstance(scmd, int):

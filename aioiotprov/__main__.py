@@ -71,10 +71,7 @@ parser.add_argument(
     help="The password that will control access to the device.",
 )
 parser.add_argument(
-    "-P",
-    "--plugin",
-    action = "append",
-    help="Select which plugin to use.",
+    "-P", "--plugin", action="append", help="Select which plugin to use."
 )
 parser.add_argument(
     "-o",
@@ -183,7 +180,9 @@ else:
                 provisioner.iface, provisioner.is_shared
             )
         )
-        resu = loop.run_until_complete(provisioner.provision(options=opts.options,plugins=opts.plugin))
+        resu = loop.run_until_complete(
+            provisioner.provision(options=opts.options, plugins=opts.plugin)
+        )
         logging.info("Got: {}".format(resu))
         if opts.json:
             print(json.dumps(resu))

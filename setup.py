@@ -30,11 +30,6 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.5",
     ],
-    entry_points={
-        'console_scripts': [
-            'aioiotprov=aioiotprov.__main__:main'
-        ],
-    },
-
+    entry_points={"console_scripts": ["aioiotprov=aioiotprov.__main__:main"]},
     zip_safe=False,
 )

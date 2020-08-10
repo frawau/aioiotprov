@@ -466,7 +466,7 @@ def load_plugins(needed=[]):
     loplugins = {}
     for filename in os.listdir(dir_path):
         name, ext = os.path.splitext(filename)
-        if needed == [] or name in needed:
+        if not needed or name in needed:
             if ext.endswith(".py"):
                 try:
                     mod = importlib.import_module("." + name, package="plugins")
@@ -601,7 +601,7 @@ class IoTProvision(object):
         """
         await self.wifimanager.wifi_reset(self.iface, self.ssid, self.psk)
 
-    async def provision(self, plugins=None, options={}):
+    async def provision(self, plugins=[], options={}):
         """Connect to the given wifi network.
 
             :param plugins: List of plugins to load. None means all.

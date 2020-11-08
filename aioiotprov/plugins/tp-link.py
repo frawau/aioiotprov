@@ -139,5 +139,12 @@ class TPLink(object):
         finally:
             return resu
 
+    @classmethod
+    def persist(self, values):
+        """
+        Any key to persist?
+        """
+        pass
+
 
 PluginObject = TPLink

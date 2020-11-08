@@ -189,5 +189,12 @@ class Shelly(object):
         self.go_on = False
         return resu
 
+    @classmethod
+    def persist(self, values):
+        """
+        Any key to persist?
+        """
+        pass
+
 
 PluginObject = Shelly

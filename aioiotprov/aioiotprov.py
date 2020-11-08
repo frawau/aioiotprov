@@ -499,6 +499,7 @@ class IoTProvision(object):
         self.is_shared = False
         self.interfaces = {}
         self.wifimanager = manager
+        self.do_persist = False
 
     def set_secure(self, user, passw):
         """Set the username and password to secure the device with.
@@ -698,6 +699,12 @@ class IoTProvision(object):
                     if not myplug.go_on:
                         result.update(presu)
                     currcnt += 1
+            if self.do_persist:
+                try:
+                    aplug.persist(result)
+                except:
+                    logging.debug("No persist method")
+
         if self.is_shared:
             await self.wifi_reset()
         return result

@@ -167,5 +167,12 @@ class Broadlink(object):
         self.go_on = False
         return {self.mac: {"type": "broadlink"}}
 
+    @classmethod
+    def persist(self, values):
+        """
+        Any key to persist?
+        """
+        pass
+
 
 PluginObject = Broadlink

@@ -126,5 +126,12 @@ class Etrix(object):
         self.go_on = False
         return {self.mac: resu}
 
+    @classmethod
+    def persist(self, values):
+        """
+        Any key to persist?
+        """
+        pass
+
 
 PluginObject = Etrix

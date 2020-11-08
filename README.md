@@ -7,10 +7,10 @@ A library/utility to provision IoT devices
 [![GITHUB-BADGE](https://github.com/frawau/aioiotprov/workflows/black/badge.svg)](https://github.com/psf/black)
 
 This is early day.  Currently it can provision TP-Link smartplugs, Broadlink IR blasters,  Sonoff switches running
-the Tasmota firmware, Shelly devices and E-Trix power monitors
+the Tasmota firmware, Shelly devices and E-Trix power monitors, Xiaomi Yeelights (Possibly other too)
 
 This uses nmcli or wpa_cli to control and configure WIFI access. This means this will work only with
-Linux, and then again not all. It is working on a RaspberryPi running Debian Stretch (No NetworkManager) and works on a laptop ruunning Ubuntu 18.10
+Linux, and then again not all. It is working on a RaspberryPi running Debian Stretch (No NetworkManager) and works on a laptop ruunning Ubuntu 18.10 to 20.04
 
 When using nmcli, it is possible to use a connected WiFi adapter, this has not yet been tested with wpa_cli
 
@@ -101,6 +101,20 @@ The plugin supports the following options:
 
 This is a plugin to provision [TP-Link](https://www.kasasmart.com/us/products/smart-plugs) smart plugs devices. It may work with other smart home devices, but this has not been tested.
 The device cannot be secured (no user/password setting) nor is any option available for this plugin.
+
+### yeelight
+
+This plugin is based on the protocol description and the code  from [OpenMiHome](https://github.com/OpenMiHome/mihome-binary-protocol)
+
+This plugin provision [Xiaomi Yeelight](https://www.yeelight.com/).
+
+Upon successful provisioning,  the token, used to encrypt subsequent communications, is returned.
+
+By default, the key will be saved in the file ~/.aioyeelight. It can then be used with [aioyeelight](ttps://github.com/frawau/aioyeelight).
+If you do not wish to pers
+
+Note:
+    The plugin accepts the option 'owner' but this does not seem to have any effect.
 
 # How it works
 

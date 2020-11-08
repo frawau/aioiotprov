@@ -27,6 +27,7 @@
 import argparse, os, sys, asyncio
 import aioiotprov as aiop
 import logging, json, shutil
+from pprint import pprint
 
 
 class OptionString(argparse.Action):
@@ -119,6 +120,12 @@ def main(args=None):
         help="Just list the available SSID.",
     )
     parser.add_argument(
+        "--nopersist",
+        default=False,
+        action="store_true",
+        help="Do NOT persist keys, for those plugins where a key is generated. False by default.",
+    )
+    parser.add_argument(
         "-d",
         "--debug",
         default=False,
@@ -163,6 +170,7 @@ def main(args=None):
 
     provisioner = aiop.IoTProvision(opts.ssid, opts.passphrase, manager=wifictl)
     provisioner.set_secure(opts.user, opts.password)
+    provisioner.do_persist = not opts.nopersist
 
     # First find out what interfaces are available
     interfaces = loop.run_until_complete(provisioner.gather_netinfo())
@@ -194,6 +202,10 @@ def main(args=None):
             logging.info("Got: {}".format(resu))
             if opts.json:
                 print(json.dumps(resu))
+            else:
+                print("We provisioned:")
+                pprint((resu))
+
     loop.close()
 
 

@@ -10,7 +10,7 @@ This is early day.  Currently it can provision TP-Link smartplugs, Broadlink IR 
 the Tasmota firmware, Shelly devices and E-Trix power monitors, Xiaomi Yeelights (Possibly other Xiaomi too)
 
 This uses nmcli or wpa_cli to control and configure WIFI access. This means this will work only with
-Linux, and then again not all. It is working on a RaspberryPi running Debian Stretch (No NetworkManager) and works on a laptop ruunning Ubuntu 18.10 to 20.04
+Linux, and then again not all. It is working on a RaspberryPi running Debian Stretch (No NetworkManager) and works on a laptop running Ubuntu 18.10 to 20.04
 
 When using nmcli, it is possible to use a connected WiFi adapter, this has not yet been tested with wpa_cli
 

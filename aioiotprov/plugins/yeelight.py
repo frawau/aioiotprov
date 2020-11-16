@@ -33,6 +33,7 @@ import logging
 import json
 import hashlib
 import os
+import datetime as dt
 from base64 import b64encode
 
 # https://cryptography.io/
@@ -40,6 +41,8 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from time import time
+
+LOMATCHES = ["yeelink"]
 
 _backend = default_backend()
 
@@ -176,6 +179,14 @@ class Yeelight(object):
         self.queue = asyncio.Queue()
         self.owner = "Karl_Marx@international.org"
         self.state = ["initial", "communicating", "closing"]
+        self.domain = "sg"
+        tzinfo = dt.datetime.now().astimezone().tzinfo
+        self.gmt_offset = tzinfo.utcoffset(dt.datetime.now()).seconds
+        self.timezone = "Ext\/GMT"
+        myname = tzinfo.tzname(dt.datetime.now())
+        if len(myname) == 3 and myname[1] == "0":
+            myname = myname[0] + myname[2]
+        self.timezone += myname
 
     @classmethod
     def can_handle(self, cells):
@@ -190,8 +201,10 @@ class Yeelight(object):
         """
         resu = {}
         for x in cells:
-            if x.lower().strip().startswith("yeelink"):
-                resu[x] = {"passwd": "", "ip": "", "ipv6": ""}
+            for amatch in LOMATCHES:
+                if x.lower().strip().startswith(amatch):
+                    resu[x] = {"passwd": "", "ip": "", "ipv6": ""}
+                    break
 
         return resu
 
@@ -204,6 +217,10 @@ class Yeelight(object):
         logging.debug("options --> {}".format(options))
         if "owner" in options:
             self.owner = options["owner"]
+        if "domain" in options:
+            self.domain = options["domain"]
+        if "timezone" in options:
+            self.timezone = options["timezone"]
         await asyncio.sleep(0)
 
     async def provision(self, ip, ssid, psk, ktype="none"):
@@ -290,6 +307,9 @@ class Yeelight(object):
                     payload = {"method": "miIO.config_router"}
                     payload["id"] = int(time())
                     payload["params"] = {"ssid": ssid, "passwd": psk, "uid": self.owner}
+                    payload["params"]["country_domain"] = self.domain
+                    payload["params"]["gmt_offset"] = self.gmt_offset
+                    payload["params"]["tz"] = self.timezone
                     packet = MiioPacket()
                     packet.stamp = proto.stamp
                     packet.data = json.dumps(payload).encode()

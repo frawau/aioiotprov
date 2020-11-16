@@ -113,8 +113,13 @@ Upon successful provisioning,  the token, used to encrypt subsequent communicati
 By default, the key will be saved in the file ~/.aioyeelight. It can then be used with [aioyeelight](ttps://github.com/frawau/aioyeelight).
 If you do not wish to persist keys, use the nopersist option.
 
-Note:
-    The plugin accepts the option 'owner' but this does not seem to have any effect.
+The plugin supports the following options:
+
+    user: Your Xiaomi cloud id
+    timezone: Your timezone, default to Etc/GMT<offset>
+    country: country code for your Xiaomi server, default 'sg'
+
+
 
 # How it works
 
